@@ -139,11 +139,12 @@
         }
 
         document.getElementById('qrcode').innerHTML = "";
-        new QRCode(document.getElementById("qrcode"), {
-            text: voucherId,
-            width: 150,
-            height: 150
-        });
+      // Ganti bagian ini di fo.html:
+new QRCode(document.getElementById("qrcode"), {
+    text: data.voucherId,
+    width: 200,   // Diubah dari 150 ke 200
+    height: 200   // Diubah dari 150 ke 200
+});
 
         document.getElementById('printableVoucher').style.display = "block";
     }
