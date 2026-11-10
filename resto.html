@@ -28,7 +28,7 @@
 </div>
 
 <script>
-    const API_URL = "https://script.google.com/macros/s/AKfycbyTT3HBvnvFQQodlNLyns85fMTB6Sn-3IJSHclxrR5WNmf9aBC-z6S8nQ6ST1__-wUv0A/exec";
+    const API_URL = "GANTI_DENGAN_WEB_APP_URL_ANDA";
     let html5QrcodeScanner;
     let isProcessing = false;
 
@@ -36,7 +36,6 @@
         if(isProcessing) return;
         isProcessing = true;
         
-        // Dapatkan tanggal hari ini (YYYY-MM-DD)
         const today = new Date().toISOString().split('T')[0];
 
         document.getElementById('resTitle').innerText = "Memeriksa...";
@@ -65,7 +64,14 @@
     }
 
     function initScanner() {
-        html5QrcodeScanner = new Html5QrcodeScanner("reader", { fps: 10, qrbox: 250 });
+        // Konfigurasi ekstra agar scanner lebih peka membaca QR code buram/kecil
+        const config = { 
+            fps: 15, 
+            qrbox: { width: 250, height: 250 },
+            formatsToSupport: [ Html5QrcodeSupportedFormats.QR_CODE ]
+        };
+        
+        html5QrcodeScanner = new Html5QrcodeScanner("reader", config, /* verbose= */ false);
         html5QrcodeScanner.render(onScanSuccess);
     }
 
