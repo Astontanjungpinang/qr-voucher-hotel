@@ -18,9 +18,8 @@
 </head>
 <body>
 <div class="container no-print" style="max-width: 500px;">
-    <a href="index.html" class="btn btn-sm btn-outline-secondary mb-3">&larr; Kembali</a>
+    <a href="index.html" class="btn btn-sm btn-outline-secondary mb-3">← Kembali</a>
     
-    <!-- Tab Navigasi FO -->
     <ul class="nav nav-pills nav-justified mb-3" id="foTab" role="tablist">
         <li class="nav-item">
             <button class="nav-link active" id="create-tab" data-bs-toggle="tab" data-bs-target="#createPane">Buat Voucher Baru</button>
@@ -31,7 +30,6 @@
     </ul>
 
     <div class="tab-content" id="foTabContent">
-        <!-- Form 1: Buat Voucher Baru -->
         <div class="tab-pane fade show active card p-4 shadow-sm" id="createPane">
             <h4 class="mb-3 text-primary">Buat Voucher Breakfast</h4>
             <form id="voucherForm">
@@ -57,7 +55,6 @@
             </form>
         </div>
 
-        <!-- Form 2: Cetak Ulang Voucher -->
         <div class="tab-pane fade card p-4 shadow-sm" id="reprintPane">
             <h4 class="mb-3 text-warning">Cetak Ulang Voucher Hilang</h4>
             <form id="reprintForm">
@@ -71,7 +68,6 @@
     </div>
 </div>
 
-<!-- Tampilan Struk / Kertas Voucher yang Akan Dicetak -->
 <div id="printableVoucher" class="text-center p-3 m-auto bg-white border" style="max-width: 300px; display: none;">
     <h5 class="fw-bold mb-1">HOTEL BREAKFAST VOUCHER</h5>
     <span id="reprintBadge" class="badge bg-secondary mb-1" style="display:none;">DUPLIKAT / REPRINT</span>
@@ -90,9 +86,9 @@
 
 <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
 <script>
-    const API_URL = "https://script.google.com/macros/s/AKfycbw_65pG1IkHsfs9M4xsyOHfPwrDH0DXBfWXh6jSBo0fsNaPyQdGQ8s9rFFfvFu_pD6W1w/exec"; // Masukkan URL Google Script Anda di sini
+    // MASUKKAN URL GOOGLE SCRIPT ANDA DI SINI
+    const API_URL = "https://script.google.com/macros/s/AKfycbz-nUo7AasvoMP1JNyMUADrDdpU9JnfUXipHUAMEuRyuyMzMODGWaaY5ndw6IP_DHNM/exec";
 
-    // Dapatkan tanggal hari ini & besok
     const today = new Date();
     const todayStr = today.toISOString().split('T')[0];
 
@@ -141,7 +137,6 @@
         document.getElementById('printableVoucher').style.display = "block";
     }
 
-    // Fungsi JSONP Bebas CORS
     function callGoogleScript(params, callbackName) {
         const script = document.createElement('script');
         let queryString = '?callback=' + callbackName;
@@ -149,11 +144,19 @@
             queryString += '&' + key + '=' + encodeURIComponent(params[key]);
         }
         script.src = API_URL + queryString;
+        
+        script.onerror = function() {
+            alert("Gagal koneksi ke server database! Pastikan Google Script di-deploy ke New Version.");
+            const btnSubmit = document.getElementById('btnSubmit');
+            const btnReprint = document.getElementById('btnReprintSubmit');
+            if (btnSubmit) { btnSubmit.disabled = false; btnSubmit.innerText = "Buat & Generate QR"; }
+            if (btnReprint) { btnReprint.disabled = false; btnReprint.innerText = "Cari Data Voucher"; }
+        };
+
         document.body.appendChild(script);
         script.onload = () => document.body.removeChild(script);
     }
 
-    // Callback Buat Voucher
     window.onVoucherCreated = function(data) {
         const btn = document.getElementById('btnSubmit');
         btn.disabled = false;
@@ -170,7 +173,6 @@
         }
     };
 
-    // Callback Cetak Ulang
     window.onVoucherSearched = function(data) {
         const btn = document.getElementById('btnReprintSubmit');
         btn.disabled = false;
@@ -183,7 +185,6 @@
         }
     };
 
-    // Form Submit Buat Voucher
     document.getElementById('voucherForm').addEventListener('submit', function(e) {
         e.preventDefault();
         const btn = document.getElementById('btnSubmit');
@@ -199,7 +200,6 @@
         }, 'onVoucherCreated');
     });
 
-    // Form Submit Cetak Ulang
     document.getElementById('reprintForm').addEventListener('submit', function(e) {
         e.preventDefault();
         const btn = document.getElementById('btnReprintSubmit');
