@@ -17,8 +17,8 @@
     </style>
 </head>
 <body>
-<div class="container max-width-600 no-print" style="max-width: 500px;">
-    <a href="index.html" class="btn btn-sm btn-outline-secondary mb-3">← Kembali</a>
+<div class="container no-print" style="max-width: 500px;">
+    <a href="index.html" class="btn btn-sm btn-outline-secondary mb-3">&larr; Kembali</a>
     <div class="card p-4 shadow-sm">
         <h4 class="mb-3 text-primary">Buat Voucher Breakfast</h4>
         <form id="voucherForm">
@@ -30,22 +30,29 @@
                 <label class="form-label">Jumlah Tamu (Pax)</label>
                 <input type="number" id="pax" class="form-control" value="2" min="1" required>
             </div>
-            <div class="mb-3">
-                <label class="form-label">Tanggal Valid Voucher</label>
-                <input type="date" id="tglValid" class="form-control" required>
+            <div class="row">
+                <div class="col-6 mb-3">
+                    <label class="form-label">Tgl Check-in</label>
+                    <input type="date" id="tglCheckin" class="form-control" required>
+                </div>
+                <div class="col-6 mb-3">
+                    <label class="form-label">Tgl Check-out</label>
+                    <input type="date" id="tglCheckout" class="form-control" required>
+                </div>
             </div>
             <button type="submit" id="btnSubmit" class="btn btn-primary w-100">Buat & Generate QR</button>
         </form>
     </div>
 </div>
 
-<!-- Tampilan Struk / Kertas Voucher yang Akan Dicetak -->
+<!-- Tampilan Cetak Voucher -->
 <div id="printableVoucher" class="text-center p-3 m-auto bg-white border" style="max-width: 300px; display: none;">
     <h5 class="fw-bold mb-1">HOTEL BREAKFAST VOUCHER</h5>
     <hr class="my-2">
     <p class="mb-1">No Kamar: <strong id="printKamar">-</strong></p>
     <p class="mb-1">Jumlah Tamu: <strong id="printPax">-</strong> Pax</p>
-    <p class="mb-2">Berlaku Tgl: <strong id="printTgl">-</strong></p>
+    <p class="mb-1">Check-in: <span id="printIn">-</span></p>
+    <p class="mb-2">Check-out: <span id="printOut">-</span></p>
     <div id="qrcode" class="d-flex justify-content-center my-3"></div>
     <small class="text-muted">Harap tunjukkan voucher ini ke staf restoran.</small>
     <div class="mt-3 no-print">
@@ -54,13 +61,15 @@
 </div>
 
 <script>
-    // MASUKKAN API URL GOOGLE APPS SCRIPT ANDA DI SINI
-    const API_URL = "https://script.google.com/macros/s/AKfycbxZ6uRWro6mRQ6ANTUlfwPcqhubUKO_wvGYZy9SkYu-yeoknzW6J8L7Ve0ZIrBgdmIgCg/exec";
+    const API_URL = "https://script.google.com/macros/s/AKfycbxmqGQ5M0yoJCXQ_3A2_jFMkygYaU4oJW-5TWvceKVlT72OKjpQTdXAc3tjy26_KzbzQg/exec";
 
-    // Set default tanggal besok untuk voucher breakfast
+    // Set default tanggal hari ini (Check-in) & besok (Check-out)
+    const today = new Date();
     const tomorrow = new Date();
-    tomorrow.setDate(tomorrow.getDate() + 1);
-    document.getElementById('tglValid').value = tomorrow.toISOString().split('T')[0];
+    tomorrow.setDate(today.getDate() + 1);
+
+    document.getElementById('tglCheckin').value = today.toISOString().split('T')[0];
+    document.getElementById('tglCheckout').value = tomorrow.toISOString().split('T')[0];
 
     document.getElementById('voucherForm').addEventListener('submit', function(e) {
         e.preventDefault();
@@ -70,17 +79,18 @@
 
         const noKamar = document.getElementById('noKamar').value;
         const pax = document.getElementById('pax').value;
-        const tglValid = document.getElementById('tglValid').value;
+        const tglCheckin = document.getElementById('tglCheckin').value;
+        const tglCheckout = document.getElementById('tglCheckout').value;
 
-        fetch(`${API_URL}?action=create&noKamar=${noKamar}&pax=${pax}&tglValid=${tglValid}`)
+        fetch(`${API_URL}?action=create&noKamar=${noKamar}&pax=${pax}&tglCheckin=${tglCheckin}&tglCheckout=${tglCheckout}`)
         .then(res => res.json())
         .then(data => {
             if(data.result === 'success') {
                 document.getElementById('printKamar').innerText = noKamar;
                 document.getElementById('printPax').innerText = pax;
-                document.getElementById('printTgl').innerText = tglValid;
+                document.getElementById('printIn').innerText = tglCheckin;
+                document.getElementById('printOut').innerText = tglCheckout;
                 
-                // Generate QR Code
                 document.getElementById('qrcode').innerHTML = "";
                 new QRCode(document.getElementById("qrcode"), {
                     text: data.voucherId,
