@@ -258,12 +258,13 @@
         btn.disabled = true;
         btn.innerText = "Memproses...";
 
-        const { totalPax } = hitungTotalPax();
+        const { totalPax, ebSelected } = hitungTotalPax();
 
         callGoogleScript({
             action: 'create',
             noKamar: document.getElementById('noKamar').value,
             pax: totalPax,
+            ebType: ebSelected, // Mengirim parameter ebType (none, paid, compliment)
             tglCheckin: document.getElementById('tglCheckin').value,
             tglCheckout: document.getElementById('tglCheckout').value
         }, 'onVoucherCreated');
