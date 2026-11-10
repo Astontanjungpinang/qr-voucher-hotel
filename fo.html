@@ -8,11 +8,37 @@
     <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
     <style>
         body { background-color: #eef2f5; padding: 20px; }
+        
+        /* Pengaturan Cetak (Print) Presisi di Tengah Kertas */
         @media print {
-            body * { visibility: hidden; }
-            #printableVoucher, #printableVoucher * { visibility: visible; }
-            #printableVoucher { position: absolute; left: 0; top: 0; width: 100%; }
-            .no-print { display: none !important; }
+            body * { 
+                visibility: hidden; 
+            }
+            #printableVoucher, #printableVoucher * { 
+                visibility: visible; 
+            }
+            
+            #printableVoucher { 
+                position: absolute; 
+                left: 50%;
+                transform: translateX(-50%);
+                top: 0; 
+                width: 100% !important;
+                max-width: 220px !important;
+                border: none !important;
+                box-shadow: none !important;
+                margin: 0 auto !important;
+                padding: 0 !important;
+            }
+            
+            #qrcode img, #qrcode canvas {
+                margin: 0 auto !important;
+                display: block !important;
+            }
+
+            .no-print { 
+                display: none !important; 
+            }
         }
     </style>
 </head>
