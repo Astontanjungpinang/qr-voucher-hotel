@@ -49,7 +49,8 @@
     // SETTING PASSWORD MASING-MASING DEPARTEMEN
     const PASSWORDS = {
         'FO': 'fo2027',
-        'RESTO': 'resto123'
+        'RESTO': 'resto123',
+        'FINANCE': 'finance321'
     };
 
     function openLogin(dept) {
@@ -67,6 +68,7 @@
             sessionStorage.setItem('auth_' + selectedDept, 'true');
             if (selectedDept === 'FO') window.location.href = 'fo.html';
             if (selectedDept === 'RESTO') window.location.href = 'resto.html';
+            if (selectedDept === 'FINANCE') window.location.href = 'finance.html';
         } else {
             alert('Password Salah! Akses ditolak.');
         }
