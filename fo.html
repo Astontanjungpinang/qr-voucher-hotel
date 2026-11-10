@@ -88,36 +88,29 @@
     </div>
 </div>
 
-<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
 <script>
-    const API_URL = "https://script.google.com/macros/s/AKfycbxYFfGCsueJbGVdpo--wU_29Lb3oXUA6UXLLpyJVinm20xWSUQCPhSJ1nz3AFL1K8qbtQ/exec";
+    const API_URL = "GANTI_DENGAN_WEB_APP_URL_ANDA"; // Masukkan URL Google Script Anda di sini
 
-    // Dapatkan tanggal hari ini (format YYYY-MM-DD)
+    // Dapatkan tanggal hari ini & besok
     const today = new Date();
     const todayStr = today.toISOString().split('T')[0];
 
-    // Dapatkan tanggal besok untuk default Check-out
     const tomorrow = new Date();
     tomorrow.setDate(today.getDate() + 1);
     const tomorrowStr = tomorrow.toISOString().split('T')[0];
 
-    // Elemen Input Tanggal
     const inputCheckin = document.getElementById('tglCheckin');
     const inputCheckout = document.getElementById('tglCheckout');
 
-    // Set batas minimum (min) agar tidak bisa milih tanggal lalu/backdate
     inputCheckin.min = todayStr;
     inputCheckout.min = todayStr;
-
-    // Set nilai awal (default)
     inputCheckin.value = todayStr;
     inputCheckout.value = tomorrowStr;
 
-    // Otomatis update batas min Check-out ketika Tanggal Check-in diubah
     inputCheckin.addEventListener('change', function() {
         const selectedCheckin = inputCheckin.value;
         inputCheckout.min = selectedCheckin;
-        
         if (inputCheckout.value < selectedCheckin) {
             inputCheckout.value = selectedCheckin;
         }
@@ -139,86 +132,84 @@
         }
 
         document.getElementById('qrcode').innerHTML = "";
-      // Ganti bagian ini di fo.html:
-new QRCode(document.getElementById("qrcode"), {
-    text: data.voucherId,
-    width: 200,   // Diubah dari 150 ke 200
-    height: 200   // Diubah dari 150 ke 200
-});
+        new QRCode(document.getElementById("qrcode"), {
+            text: voucherId,
+            width: 200,
+            height: 200
+        });
 
         document.getElementById('printableVoucher').style.display = "block";
     }
 
-    // Submit Buat Voucher Baru (DIPERBAIKI)
+    // Fungsi JSONP Bebas CORS
+    function callGoogleScript(params, callbackName) {
+        const script = document.createElement('script');
+        let queryString = '?callback=' + callbackName;
+        for (let key in params) {
+            queryString += '&' + key + '=' + encodeURIComponent(params[key]);
+        }
+        script.src = API_URL + queryString;
+        document.body.appendChild(script);
+        script.onload = () => document.body.removeChild(script);
+    }
+
+    // Callback Buat Voucher
+    window.onVoucherCreated = function(data) {
+        const btn = document.getElementById('btnSubmit');
+        btn.disabled = false;
+        btn.innerText = "Buat & Generate QR";
+
+        if(data.result === 'success') {
+            const noKamar = document.getElementById('noKamar').value;
+            const pax = document.getElementById('pax').value;
+            const tglCheckin = document.getElementById('tglCheckin').value;
+            const tglCheckout = document.getElementById('tglCheckout').value;
+            showVoucherPrintout(data.voucherId, noKamar, pax, tglCheckin, tglCheckout, false);
+        } else {
+            alert(data.message || "Gagal membuat voucher.");
+        }
+    };
+
+    // Callback Cetak Ulang
+    window.onVoucherSearched = function(data) {
+        const btn = document.getElementById('btnReprintSubmit');
+        btn.disabled = false;
+        btn.innerText = "Cari Data Voucher";
+
+        if(data.result === 'success') {
+            showVoucherPrintout(data.voucherId, data.noKamar, data.pax, data.tglCheckin, data.tglCheckout, true);
+        } else {
+            alert(data.message || "Data tidak ditemukan.");
+        }
+    };
+
+    // Form Submit Buat Voucher
     document.getElementById('voucherForm').addEventListener('submit', function(e) {
         e.preventDefault();
         const btn = document.getElementById('btnSubmit');
         btn.disabled = true;
         btn.innerText = "Memproses...";
 
-        const noKamar = document.getElementById('noKamar').value;
-        const pax = document.getElementById('pax').value;
-        const tglCheckin = document.getElementById('tglCheckin').value;
-        const tglCheckout = document.getElementById('tglCheckout').value;
-
-        const targetUrl = `${API_URL}?action=create&noKamar=${encodeURIComponent(noKamar)}&pax=${encodeURIComponent(pax)}&tglCheckin=${encodeURIComponent(tglCheckin)}&tglCheckout=${encodeURIComponent(tglCheckout)}`;
-
-        fetch(targetUrl, { method: 'GET', redirect: 'follow' })
-        .then(res => {
-            if (!res.ok) throw new Error("HTTP error " + res.status);
-            return res.json();
-        })
-        .then(data => {
-            if(data.result === 'success') {
-                showVoucherPrintout(data.voucherId, noKamar, pax, tglCheckin, tglCheckout, false);
-                btn.disabled = false;
-                btn.innerText = "Buat & Generate QR";
-            } else {
-                alert(data.message || "Gagal membuat voucher.");
-                btn.disabled = false;
-                btn.innerText = "Buat & Generate QR";
-            }
-        })
-        .catch(err => {
-            console.error("Fetch Error:", err);
-            alert("Gagal koneksi ke server database! Pastikan izin Google Apps Script di-set ke 'Anyone' (Siapa saja).");
-            btn.disabled = false;
-            btn.innerText = "Buat & Generate QR";
-        });
+        callGoogleScript({
+            action: 'create',
+            noKamar: document.getElementById('noKamar').value,
+            pax: document.getElementById('pax').value,
+            tglCheckin: document.getElementById('tglCheckin').value,
+            tglCheckout: document.getElementById('tglCheckout').value
+        }, 'onVoucherCreated');
     });
 
-    // Submit Cari & Cetak Ulang (DIPERBAIKI)
+    // Form Submit Cetak Ulang
     document.getElementById('reprintForm').addEventListener('submit', function(e) {
         e.preventDefault();
         const btn = document.getElementById('btnReprintSubmit');
         btn.disabled = true;
         btn.innerText = "Mencari...";
 
-        const searchKamar = document.getElementById('searchKamar').value.trim();
-        const targetUrl = `${API_URL}?action=search&noKamar=${encodeURIComponent(searchKamar)}`;
-
-        fetch(targetUrl, { method: 'GET', redirect: 'follow' })
-        .then(res => {
-            if (!res.ok) throw new Error("HTTP error " + res.status);
-            return res.json();
-        })
-        .then(data => {
-            if(data.result === 'success') {
-                showVoucherPrintout(data.voucherId, data.noKamar, data.pax, data.tglCheckin, data.tglCheckout, true);
-                btn.disabled = false;
-                btn.innerText = "Cari Data Voucher";
-            } else {
-                alert(data.message || "Data tidak ditemukan.");
-                btn.disabled = false;
-                btn.innerText = "Cari Data Voucher";
-            }
-        })
-        .catch(err => {
-            console.error("Fetch Error:", err);
-            alert("Gagal koneksi ke server database!");
-            btn.disabled = false;
-            btn.innerText = "Cari Data Voucher";
-        });
+        callGoogleScript({
+            action: 'search',
+            noKamar: document.getElementById('searchKamar').value.trim()
+        }, 'onVoucherSearched');
     });
 </script>
 </body>
