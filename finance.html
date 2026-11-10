@@ -18,7 +18,6 @@
 <body>
 
 <script>
-    // Proteksi Keamanan Password Finance
     if (sessionStorage.getItem('auth_FINANCE') !== 'true') {
         alert('Akses Ditolak! Silakan login sebagai Accounting.');
         window.location.href = 'index.html';
@@ -26,7 +25,6 @@
 </script>
 
 <div class="container-fluid">
-    <!-- Header Navigation -->
     <div class="d-flex justify-content-between align-items-center mb-4 no-print">
         <div>
             <a href="index.html" class="btn btn-outline-secondary btn-sm me-2">← Main Menu</a>
@@ -38,7 +36,6 @@
         </div>
     </div>
 
-    <!-- Executive Summary Cards -->
     <div class="row g-3 mb-4">
         <div class="col-md-3">
             <div class="card card-stat p-3 bg-white shadow-sm">
@@ -66,14 +63,13 @@
         </div>
     </div>
 
-    <!-- Main Table Data Report -->
     <div class="card shadow-sm">
         <div class="card-header bg-white py-3">
             <h5 class="mb-0 fw-bold">Laporan Rekonsiliasi Sarapan per Kamar</h5>
         </div>
         <div class="card-body p-0">
             <div class="table-responsive">
-                <table class="table table-hover table-striped align-middle mb-0" id="reportTable">
+                <table class="table table-hover table-striped align-middle mb-0">
                     <thead class="table-dark">
                         <tr>
                             <th>No Kamar</th>
@@ -98,37 +94,24 @@
 
 <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
 <script>
-    const API_URL = "https://script.google.com/macros/s/AKfycbxsSJCFyWJlW88v7b77tw90xziwGMzTrCAeQ5Kfhv-DYNn7p7_jJ14SGADmn9spuEGhGw/exec";
+    const API_URL = "https://script.google.com/macros/s/AKfycbzFiksCnz2fzh-8rnPlmWOQ5u4OHZvmKXABoTPPH4qtzLDpQzq1R29nSbgWYqsl2Ma5bg/exec";
 
     function loadReport() {
         const tableBody = document.getElementById('reportContent');
         tableBody.innerHTML = `<tr><td colspan="7" class="text-center py-4 text-primary">Memuat data terbaru...</td></tr>`;
 
-        // Buat elemen script dinamik (JSONP)
+        // Panggilan JSONP Dinamik
         const script = document.createElement('script');
-        script.src = `${API_URL}?action=report&callback=renderReportData&t=${Date.now()}`;
-        
-        // Handling jika terjadi timeout / gagal koneksi
-        const timeout = setTimeout(() => {
-            if (tableBody.innerHTML.includes("Memuat data terbaru...")) {
-                tableBody.innerHTML = `<tr><td colspan="7" class="text-center py-4 text-danger">Gagal mengambil data! Pastikan Apps Script sudah di-deploy ke <strong>New Version</strong>.</td></tr>`;
-            }
-        }, 10000);
-
-        script.onload = () => clearTimeout(timeout);
-        script.onerror = () => {
-            clearTimeout(timeout);
-            tableBody.innerHTML = `<tr><td colspan="7" class="text-center py-4 text-danger">Terjadi kesalahan jaringan server database.</td></tr>`;
-        };
-
+        script.src = `${API_URL}?action=report&callback=renderReportData&_=${Date.now()}`;
         document.body.appendChild(script);
+        script.onload = () => document.body.removeChild(script);
     }
 
     window.renderReportData = function(response) {
         const tableBody = document.getElementById('reportContent');
         
         if (!response || response.result !== 'success') {
-            tableBody.innerHTML = `<tr><td colspan="7" class="text-center py-4 text-danger">${response.message || 'Gagal memuat laporan.'}</td></tr>`;
+            tableBody.innerHTML = `<tr><td colspan="7" class="text-center py-4 text-danger">${(response && response.message) ? response.message : 'Gagal memuat laporan.'}</td></tr>`;
             return;
         }
 
@@ -153,7 +136,7 @@
             totalPax += paxNum;
             totalScan += scanNum;
 
-            let statusBadge = '<span class="badge bg-success">Valid / Redemed</span>';
+            let statusBadge = '<span class="badge bg-success">Valid / Redeemed</span>';
             if (scanNum === 0) {
                 statusBadge = '<span class="badge bg-secondary">No Show</span>';
             }
@@ -173,16 +156,14 @@
 
         tableBody.innerHTML = html;
         
-        // Update Ringkasan Stat Finance
         document.getElementById('statTotalVoucher').innerText = data.length;
         document.getElementById('statTotalPax').innerText = totalPax;
         document.getElementById('statTotalScan').innerText = totalScan;
         
-        const rate = totalPax > 0 ? Math.round((totalScan / data.length) * 100) : 0;
+        const rate = data.length > 0 ? Math.round((totalScan / data.length) * 100) : 0;
         document.getElementById('statRate').innerText = rate + '%';
     };
 
-    // Auto load data saat halaman selesai dimuat
     document.addEventListener('DOMContentLoaded', loadReport);
 </script>
 </body>
