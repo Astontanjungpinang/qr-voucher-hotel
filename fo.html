@@ -9,6 +9,17 @@
     <style>
         body { background-color: #eef2f5; padding: 20px; }
         
+        /* Sembunyikan canvas bawaan qrcode.js agar tidak double QR */
+        #qrcode canvas {
+            display: none !important;
+        }
+
+        /* Tampilkan hanya gambar QR dan posisikan di tengah */
+        #qrcode img {
+            display: block !important;
+            margin: 0 auto !important;
+        }
+
         /* Pengaturan Cetak (Print) Presisi di Tengah Kertas */
         @media print {
             body * { 
@@ -31,11 +42,6 @@
                 padding: 0 !important;
             }
             
-            #qrcode img, #qrcode canvas {
-                margin: 0 auto !important;
-                display: block !important;
-            }
-
             .no-print { 
                 display: none !important; 
             }
