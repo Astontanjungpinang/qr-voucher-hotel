@@ -169,11 +169,14 @@
             document.getElementById('reprintBadge').style.display = "none";
         }
 
-        document.getElementById('qrcode').innerHTML = "";
-        new QRCode(document.getElementById("qrcode"), {
+        // Bersihkan area QR sebelum membuat yang baru
+        const qrDiv = document.getElementById("qrcode");
+        qrDiv.innerHTML = "";
+        
+        new QRCode(qrDiv, {
             text: voucherId,
-            width: 130,  // Diperkecil ke 130px agar pas di kertas kecil
-            height: 130  // Diperkecil ke 130px
+            width: 130,
+            height: 130
         });
 
         document.getElementById('printableVoucher').style.display = "block";
