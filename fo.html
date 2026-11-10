@@ -45,14 +45,15 @@
     </div>
 </div>
 
-<!-- Tampilan Cetak Voucher -->
+<!-- Tampilan Cetak Voucher di fo.html -->
 <div id="printableVoucher" class="text-center p-3 m-auto bg-white border" style="max-width: 300px; display: none;">
     <h5 class="fw-bold mb-1">HOTEL BREAKFAST VOUCHER</h5>
     <hr class="my-2">
     <p class="mb-1">No Kamar: <strong id="printKamar">-</strong></p>
     <p class="mb-1">Jumlah Tamu: <strong id="printPax">-</strong> Pax</p>
-    <p class="mb-1">Check-in: <span id="printIn">-</span></p>
-    <p class="mb-2">Check-out: <span id="printOut">-</span></p>
+    <hr class="my-1">
+    <p class="mb-1" style="font-size: 0.9rem;">Berlaku Sarapan:</p>
+    <p class="mb-2"><strong id="printBerlaku">-</strong></p>
     <div id="qrcode" class="d-flex justify-content-center my-3"></div>
     <small class="text-muted">Harap tunjukkan voucher ini ke staf restoran.</small>
     <div class="mt-3 no-print">
@@ -61,7 +62,7 @@
 </div>
 
 <script>
-    const API_URL = "https://script.google.com/macros/s/AKfycbxmqGQ5M0yoJCXQ_3A2_jFMkygYaU4oJW-5TWvceKVlT72OKjpQTdXAc3tjy26_KzbzQg/exec";
+    const API_URL = "https://script.google.com/macros/s/AKfycbx-IS-58yrbVQBSE8qfnxjvtYfyqWs9VYPqSlJXzS5s1rwzvhDjz1mLeaXgKA6DpfQ3vA/exec";
 
     // Set default tanggal hari ini (Check-in) & besok (Check-out)
     const today = new Date();
@@ -72,43 +73,47 @@
     document.getElementById('tglCheckout').value = tomorrow.toISOString().split('T')[0];
 
     document.getElementById('voucherForm').addEventListener('submit', function(e) {
-        e.preventDefault();
-        const btn = document.getElementById('btnSubmit');
-        btn.disabled = true;
-        btn.innerText = "Memproses...";
+    e.preventDefault();
+    const btn = document.getElementById('btnSubmit');
+    btn.disabled = true;
+    btn.innerText = "Memproses...";
 
-        const noKamar = document.getElementById('noKamar').value;
-        const pax = document.getElementById('pax').value;
-        const tglCheckin = document.getElementById('tglCheckin').value;
-        const tglCheckout = document.getElementById('tglCheckout').value;
+    const noKamar = document.getElementById('noKamar').value;
+    const pax = document.getElementById('pax').value;
+    const tglCheckin = document.getElementById('tglCheckin').value;
+    const tglCheckout = document.getElementById('tglCheckout').value;
 
-        fetch(`${API_URL}?action=create&noKamar=${noKamar}&pax=${pax}&tglCheckin=${tglCheckin}&tglCheckout=${tglCheckout}`)
-        .then(res => res.json())
-        .then(data => {
-            if(data.result === 'success') {
-                document.getElementById('printKamar').innerText = noKamar;
-                document.getElementById('printPax').innerText = pax;
-                document.getElementById('printIn').innerText = tglCheckin;
-                document.getElementById('printOut').innerText = tglCheckout;
-                
-                document.getElementById('qrcode').innerHTML = "";
-                new QRCode(document.getElementById("qrcode"), {
-                    text: data.voucherId,
-                    width: 150,
-                    height: 150
-                });
+    fetch(`${API_URL}?action=create&noKamar=${noKamar}&pax=${pax}&tglCheckin=${tglCheckin}&tglCheckout=${tglCheckout}`)
+    .then(res => res.json())
+    .then(data => {
+        if(data.result === 'success') {
+            // Hitung tanggal besok (mulai sarapan) untuk tampilan struk
+            const checkInDate = new Date(tglCheckin);
+            checkInDate.setDate(checkInDate.getDate() + 1);
+            const startBreakfastStr = checkInDate.toISOString().split('T')[0];
 
-                document.getElementById('printableVoucher').style.display = "block";
-                btn.disabled = false;
-                btn.innerText = "Buat & Generate QR";
-            }
-        })
-        .catch(err => {
-            alert("Gagal koneksi ke server database!");
+            document.getElementById('printKamar').innerText = noKamar;
+            document.getElementById('printPax').innerText = pax;
+            document.getElementById('printBerlaku').innerText = `${startBreakfastStr} s/d ${tglCheckout}`;
+            
+            document.getElementById('qrcode').innerHTML = "";
+            new QRCode(document.getElementById("qrcode"), {
+                text: data.voucherId,
+                width: 150,
+                height: 150
+            });
+
+            document.getElementById('printableVoucher').style.display = "block";
             btn.disabled = false;
             btn.innerText = "Buat & Generate QR";
-        });
+        }
+    })
+    .catch(err => {
+        alert("Gagal koneksi ke server database!");
+        btn.disabled = false;
+        btn.innerText = "Buat & Generate QR";
     });
+});
 </script>
 </body>
 </html>
