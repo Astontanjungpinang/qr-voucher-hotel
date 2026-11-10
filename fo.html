@@ -92,13 +92,36 @@
 <script>
     const API_URL = "https://script.google.com/macros/s/AKfycbyVzUjn-IFcOhIVZRJrf617VrmyX1-UCJ4KU237WrMNJTPzWlhUrDUnLDC6kMAdoI-zHQ/exec";
 
-    // Set default tanggal hari ini & besok
+    // Dapatkan tanggal hari ini (format YYYY-MM-DD)
     const today = new Date();
+    const todayStr = today.toISOString().split('T')[0];
+
+    // Dapatkan tanggal besok untuk default Check-out
     const tomorrow = new Date();
     tomorrow.setDate(today.getDate() + 1);
+    const tomorrowStr = tomorrow.toISOString().split('T')[0];
 
-    document.getElementById('tglCheckin').value = today.toISOString().split('T')[0];
-    document.getElementById('tglCheckout').value = tomorrow.toISOString().split('T')[0];
+    // Elemen Input Tanggal
+    const inputCheckin = document.getElementById('tglCheckin');
+    const inputCheckout = document.getElementById('tglCheckout');
+
+    // Set batas minimum (min) agar tidak bisa milih tanggal lalu/backdate
+    inputCheckin.min = todayStr;
+    inputCheckout.min = todayStr;
+
+    // Set nilai awal (default)
+    inputCheckin.value = todayStr;
+    inputCheckout.value = tomorrowStr;
+
+    // Otomatis update batas min Check-out ketika Tanggal Check-in diubah
+    inputCheckin.addEventListener('change', function() {
+        const selectedCheckin = inputCheckin.value;
+        inputCheckout.min = selectedCheckin;
+        
+        if (inputCheckout.value < selectedCheckin) {
+            inputCheckout.value = selectedCheckin;
+        }
+    });
 
     function showVoucherPrintout(voucherId, noKamar, pax, tglCheckin, tglCheckout, isReprint = false) {
         const checkInDate = new Date(tglCheckin);
