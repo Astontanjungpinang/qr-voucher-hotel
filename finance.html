@@ -8,6 +8,9 @@
     <style>
         body { background-color: #f8f9fa; padding: 20px; font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; }
         .card-stat { border-left: 4px solid #0d6efd; }
+        @media (min-width: 768px) {
+            .col-md-2-4 { flex: 0 0 auto; width: 20%; }
+        }
         @media print {
             .no-print { display: none !important; }
             body { background: white; padding: 0; }
@@ -25,37 +28,52 @@
 </script>
 
 <div class="container-fluid">
-    <div class="d-flex justify-content-between align-items-center mb-4 no-print">
+    <!-- Header Navigation & Filter Tanggal -->
+    <div class="d-flex flex-wrap justify-content-between align-items-center mb-4 no-print gap-3">
         <div>
             <a href="index.html" class="btn btn-outline-secondary btn-sm me-2">← Main Menu</a>
             <h3 class="d-inline align-middle fw-bold text-dark">Finance & Accounting Breakfast Reconciliation</h3>
         </div>
-        <div>
-            <button onclick="window.print()" class="btn btn-primary me-2">🖶 Print / Export PDF</button>
-            <button onclick="loadReport()" class="btn btn-success">↻ Refresh Data</button>
+        
+        <!-- Form Filter Tanggal & Action -->
+        <div class="d-flex align-items-center gap-2">
+            <div class="input-group input-group-sm" style="width: auto;">
+                <span class="input-group-text bg-white fw-bold">Tgl Audit:</span>
+                <input type="date" id="filterDate" class="form-control" onchange="loadReport()">
+            </div>
+            <button onclick="clearFilter()" class="btn btn-sm btn-outline-danger" title="Tampilkan Semua Data">Reset</button>
+            <button onclick="window.print()" class="btn btn-sm btn-primary">🖶 Export PDF</button>
+            <button onclick="loadReport()" class="btn btn-sm btn-success">↻ Refresh</button>
         </div>
     </div>
 
+    <!-- 5 Cards Dashboard Summary -->
     <div class="row g-3 mb-4">
-        <div class="col-md-3">
-            <div class="card card-stat p-3 bg-white shadow-sm">
-                <small class="text-muted fw-bold">TOTAL VOUCHER TERBIT</small>
-                <h2 class="fw-bold mb-0 text-primary" id="statTotalVoucher">0</h2>
+        <div class="col-md-2-4 col-sm-6">
+            <div class="card card-stat p-3 bg-white shadow-sm" style="border-left-color: #0d6efd;">
+                <small class="text-muted fw-bold">TOTAL KAMAR</small>
+                <h2 class="fw-bold mb-0 text-primary" id="statTotalKamar">0</h2>
             </div>
         </div>
-        <div class="col-md-3">
+        <div class="col-md-2-4 col-sm-6">
+            <div class="card card-stat p-3 bg-white shadow-sm" style="border-left-color: #6c757d;">
+                <small class="text-muted fw-bold">TOTAL VOUCHER TERBIT</small>
+                <h2 class="fw-bold mb-0 text-secondary" id="statTotalVoucher">0</h2>
+            </div>
+        </div>
+        <div class="col-md-2-4 col-sm-6">
             <div class="card card-stat p-3 bg-white shadow-sm" style="border-left-color: #198754;">
                 <small class="text-muted fw-bold">TOTAL COVER EXPECTED (PAX)</small>
                 <h2 class="fw-bold mb-0 text-success" id="statTotalPax">0</h2>
             </div>
         </div>
-        <div class="col-md-3">
+        <div class="col-md-2-4 col-sm-6">
             <div class="card card-stat p-3 bg-white shadow-sm" style="border-left-color: #ffc107;">
                 <small class="text-muted fw-bold">TOTAL SCAN REDEEMED</small>
                 <h2 class="fw-bold mb-0 text-warning" id="statTotalScan">0</h2>
             </div>
         </div>
-        <div class="col-md-3">
+        <div class="col-md-2-4 col-sm-6">
             <div class="card card-stat p-3 bg-white shadow-sm" style="border-left-color: #dc3545;">
                 <small class="text-muted fw-bold">RECONCILIATION RATE</small>
                 <h2 class="fw-bold mb-0 text-danger" id="statRate">0%</h2>
@@ -63,9 +81,11 @@
         </div>
     </div>
 
+    <!-- Main Table Report -->
     <div class="card shadow-sm">
-        <div class="card-header bg-white py-3">
+        <div class="card-header bg-white py-3 d-flex justify-content-between align-items-center">
             <h5 class="mb-0 fw-bold">Laporan Rekonsiliasi Sarapan per Kamar</h5>
+            <small class="text-muted" id="filterStatusInfo">Menampilkan seluruh data</small>
         </div>
         <div class="card-body p-0">
             <div class="table-responsive">
@@ -76,7 +96,7 @@
                             <th>Pax / Kamar</th>
                             <th>Tgl Check-in</th>
                             <th>Tgl Check-out</th>
-                            <th>Total Scan (Hari)</th>
+                            <th>Total Scan</th>
                             <th>Tanggal Riwayat Scan</th>
                             <th>Status Audit</th>
                         </tr>
@@ -94,17 +114,29 @@
 
 <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
 <script>
-    const API_URL = "https://script.google.com/macros/s/AKfycbzFiksCnz2fzh-8rnPlmWOQ5u4OHZvmKXABoTPPH4qtzLDpQzq1R29nSbgWYqsl2Ma5bg/exec";
+    const API_URL = "https://script.google.com/macros/s/AKfycbxhH9TFZ947Bh9drwRxMxlkOWF5pgu_Z-O4YWvfFw6I8st2kV35plUHrCqcPpizhIuJgA/exec";
 
     function loadReport() {
         const tableBody = document.getElementById('reportContent');
+        const selectedDate = document.getElementById('filterDate').value;
+        
         tableBody.innerHTML = `<tr><td colspan="7" class="text-center py-4 text-primary">Memuat data terbaru...</td></tr>`;
 
-        // Panggilan JSONP Dinamik
+        if (selectedDate) {
+            document.getElementById('filterStatusInfo').innerText = `Filter Tanggal Audit: ${selectedDate}`;
+        } else {
+            document.getElementById('filterStatusInfo').innerText = `Menampilkan seluruh data`;
+        }
+
         const script = document.createElement('script');
-        script.src = `${API_URL}?action=report&callback=renderReportData&_=${Date.now()}`;
+        script.src = `${API_URL}?action=report&date=${encodeURIComponent(selectedDate)}&callback=renderReportData&_=${Date.now()}`;
         document.body.appendChild(script);
         script.onload = () => document.body.removeChild(script);
+    }
+
+    function clearFilter() {
+        document.getElementById('filterDate').value = "";
+        loadReport();
     }
 
     window.renderReportData = function(response) {
@@ -117,7 +149,8 @@
 
         const data = response.data || [];
         if (data.length === 0) {
-            tableBody.innerHTML = `<tr><td colspan="7" class="text-center py-4">Belum ada data voucher terbit.</td></tr>`;
+            tableBody.innerHTML = `<tr><td colspan="7" class="text-center py-4 text-muted">Tidak ada data transaksi sarapan untuk tanggal ini.</td></tr>`;
+            document.getElementById('statTotalKamar').innerText = '0';
             document.getElementById('statTotalVoucher').innerText = '0';
             document.getElementById('statTotalPax').innerText = '0';
             document.getElementById('statTotalScan').innerText = '0';
@@ -128,11 +161,16 @@
         let html = '';
         let totalPax = 0;
         let totalScan = 0;
+        const kamarSet = new Set();
 
         data.forEach(row => {
             const paxNum = parseInt(row.pax || 0);
             const scanNum = parseInt(row.totalScan || 0);
             
+            if (row.noKamar) {
+                kamarSet.add(row.noKamar.toString().trim());
+            }
+
             totalPax += paxNum;
             totalScan += scanNum;
 
@@ -156,11 +194,13 @@
 
         tableBody.innerHTML = html;
         
+        // Update Stat Summary
+        document.getElementById('statTotalKamar').innerText = kamarSet.size; // Total Kamar Unik
         document.getElementById('statTotalVoucher').innerText = data.length;
         document.getElementById('statTotalPax').innerText = totalPax;
         document.getElementById('statTotalScan').innerText = totalScan;
         
-        const rate = data.length > 0 ? Math.round((totalScan / data.length) * 100) : 0;
+        const rate = totalPax > 0 ? Math.round((totalScan / data.length) * 100) : 0;
         document.getElementById('statRate').innerText = rate + '%';
     };
 
