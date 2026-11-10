@@ -25,6 +25,7 @@
 </script>
 
 <div class="container-fluid">
+    <!-- Header Navigation & Filter -->
     <div class="d-flex flex-wrap justify-content-between align-items-center mb-4 no-print gap-3">
         <div>
             <a href="index.html" class="btn btn-outline-secondary btn-sm me-2">← Main Menu</a>
@@ -42,41 +43,53 @@
         </div>
     </div>
 
-    <!-- Ringkasan Statistik Audit Accounting -->
-    <div class="row g-3 mb-4">
+    <!-- 7 Kartu Statistik Utama Accounting (Lengkap) -->
+    <div class="row g-2 mb-4">
         <div class="col-md-2 col-sm-4">
-            <div class="card card-stat p-3 bg-white shadow-sm" style="border-left-color: #0d6efd;">
-                <small class="text-muted fw-bold">TOTAL KAMAR</small>
-                <h2 class="fw-bold mb-0 text-primary" id="statTotalKamar">0</h2>
-            </div>
-        </div>
-        <div class="col-md-2 col-sm-4">
-            <div class="card card-stat p-3 bg-white shadow-sm" style="border-left-color: #6c757d;">
-                <small class="text-muted fw-bold">TOTAL VOUCHER</small>
-                <h2 class="fw-bold mb-0 text-secondary" id="statTotalVoucher">0</h2>
+            <div class="card card-stat p-2 bg-white shadow-sm" style="border-left-color: #0d6efd;">
+                <small class="text-muted fw-bold" style="font-size: 11px;">TOTAL KAMAR</small>
+                <h3 class="fw-bold mb-0 text-primary" id="statTotalKamar">0</h3>
             </div>
         </div>
         <div class="col-md-2 col-sm-4">
-            <div class="card card-stat p-3 bg-white shadow-sm" style="border-left-color: #198754;">
-                <small class="text-muted fw-bold">TOTAL PAX</small>
-                <h2 class="fw-bold mb-0 text-success" id="statTotalPax">0</h2>
+            <div class="card card-stat p-2 bg-white shadow-sm" style="border-left-color: #6c757d;">
+                <small class="text-muted fw-bold" style="font-size: 11px;">TOTAL VOUCHER</small>
+                <h3 class="fw-bold mb-0 text-secondary" id="statTotalVoucher">0</h3>
             </div>
         </div>
-        <div class="col-md-3 col-sm-6">
-            <div class="card card-stat p-3 bg-white shadow-sm" style="border-left-color: #fd7e14;">
-                <small class="text-muted fw-bold">EXTRA BED PAID (PAX)</small>
-                <h2 class="fw-bold mb-0 text-warning" id="statEBPaid">0</h2>
+        <div class="col-md-2 col-sm-4">
+            <div class="card card-stat p-2 bg-white shadow-sm" style="border-left-color: #198754;">
+                <small class="text-muted fw-bold" style="font-size: 11px;">TOTAL PAX</small>
+                <h3 class="fw-bold mb-0 text-success" id="statTotalPax">0</h3>
             </div>
         </div>
-        <div class="col-md-3 col-sm-6">
-            <div class="card card-stat p-3 bg-white shadow-sm" style="border-left-color: #20c997;">
-                <small class="text-muted fw-bold">EXTRA BED COMPLIMENT</small>
-                <h2 class="fw-bold mb-0 text-info" id="statEBComp">0</h2>
+        <div class="col-md-2 col-sm-4">
+            <div class="card card-stat p-2 bg-white shadow-sm" style="border-left-color: #fd7e14;">
+                <small class="text-muted fw-bold" style="font-size: 11px;">EXTRA BED PAID</small>
+                <h3 class="fw-bold mb-0 text-warning" id="statEBPaid">0</h3>
+            </div>
+        </div>
+        <div class="col-md-2 col-sm-4">
+            <div class="card card-stat p-2 bg-white shadow-sm" style="border-left-color: #20c997;">
+                <small class="text-muted fw-bold" style="font-size: 11px;">EB COMPLIMENT</small>
+                <h3 class="fw-bold mb-0 text-info" id="statEBComp">0</h3>
+            </div>
+        </div>
+        <div class="col-md-1 col-sm-4" style="flex: 0 0 auto; width: 12.5%;">
+            <div class="card card-stat p-2 bg-white shadow-sm" style="border-left-color: #ffc107;">
+                <small class="text-muted fw-bold" style="font-size: 11px;">TOTAL SCAN</small>
+                <h3 class="fw-bold mb-0 text-dark" id="statTotalScan">0</h3>
+            </div>
+        </div>
+        <div class="col-md-1 col-sm-4" style="flex: 0 0 auto; width: 12.5%;">
+            <div class="card card-stat p-2 bg-white shadow-sm" style="border-left-color: #dc3545;">
+                <small class="text-muted fw-bold" style="font-size: 11px;">RATE (%)</small>
+                <h3 class="fw-bold mb-0 text-danger" id="statRate">0%</h3>
             </div>
         </div>
     </div>
 
-    <!-- Tabel Audit Detail Rekonsiliasi -->
+    <!-- Tabel Audit Detail -->
     <div class="card shadow-sm">
         <div class="card-header bg-white py-3 d-flex justify-content-between align-items-center">
             <h5 class="mb-0 fw-bold">Laporan Rekonsiliasi Sarapan per Kamar</h5>
@@ -109,7 +122,7 @@
 
 <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
 <script>
-    const API_URL = "https://script.google.com/macros/s/AKfycbxiZG93ieXf3UZhcJool4UuS5TEzLnzYD7ZIiaAqRrRALFvGYviNiPo85GJcOK_8gO3sg/exec";
+    const API_URL = "https://script.google.com/macros/s/AKfycbxdWYebjAuq6sJyXIFMK3g4f-zTaGI4solXNnw3vECdg35NX6FQ8nGN7RiK3uRCSk1aCA/exec";
 
     function loadReport() {
         const tableBody = document.getElementById('reportContent');
@@ -150,6 +163,8 @@
             document.getElementById('statTotalPax').innerText = '0';
             document.getElementById('statEBPaid').innerText = '0';
             document.getElementById('statEBComp').innerText = '0';
+            document.getElementById('statTotalScan').innerText = '0';
+            document.getElementById('statRate').innerText = '0%';
             return;
         }
 
@@ -157,6 +172,7 @@
         let totalPax = 0;
         let totalEBPaid = 0;
         let totalEBComp = 0;
+        let totalScan = 0;
         const kamarSet = new Set();
 
         data.forEach(row => {
@@ -169,6 +185,7 @@
             }
 
             totalPax += paxNum;
+            totalScan += scanNum;
 
             let ebBadge = '<span class="badge bg-light text-dark border">Tanpa Extra Bed</span>';
             if (ebType === 'paid') {
@@ -199,12 +216,16 @@
 
         tableBody.innerHTML = html;
         
-        // Update Stat Cards Finance
+        // Update 7 Kartu Statistik Finance
         document.getElementById('statTotalKamar').innerText = kamarSet.size;
         document.getElementById('statTotalVoucher').innerText = data.length;
         document.getElementById('statTotalPax').innerText = totalPax;
         document.getElementById('statEBPaid').innerText = totalEBPaid;
         document.getElementById('statEBComp').innerText = totalEBComp;
+        document.getElementById('statTotalScan').innerText = totalScan;
+        
+        const rate = data.length > 0 ? Math.round((totalScan / data.length) * 100) : 0;
+        document.getElementById('statRate').innerText = rate + '%';
     };
 
     document.addEventListener('DOMContentLoaded', loadReport);
