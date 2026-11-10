@@ -17,6 +17,8 @@
         <div class="d-grid gap-3">
             <button class="btn btn-primary btn-lg shadow-sm" onclick="openLogin('FO')">Front Office</button>
             <button class="btn btn-success btn-lg shadow-sm" onclick="openLogin('RESTO')">Staff Restoran</button>
+            <!-- Tombol Accounting & Finance -->
+            <button class="btn btn-dark btn-lg shadow-sm" onclick="openLogin('FINANCE')">Accounting & Finance</button>
         </div>
     </div>
 
@@ -46,7 +48,7 @@
     let selectedDept = "";
     const loginModal = new bootstrap.Modal(document.getElementById('loginModal'));
 
-    // SETTING PASSWORD MASING-MASING DEPARTEMEN
+    // PASSWORD AKSE KETIGA DIVISI
     const PASSWORDS = {
         'FO': 'fo2027',
         'RESTO': 'resto123',
