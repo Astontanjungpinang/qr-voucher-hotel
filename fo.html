@@ -188,23 +188,23 @@
             const qrDivId = `qrcode_${index}`;
 
             card.innerHTML = `
-                <h6 class="fw-bold mb-0 text-uppercase" style="font-size: 13px; letter-spacing: 0.5px;">ASTON TANJUNGPINANG</h6>
-                <small class="text-muted d-block mb-1" style="font-size: 8px; font-weight: 600;">HOTEL & CONFERENCE CENTER</small>
-                <div class="fw-bold my-1" style="font-size: 11px; border-top: 1px dashed #ccc; border-bottom: 1px dashed #ccc; padding: 2px 0;">
+                <h6 class="fw-bold mb-0 text-uppercase" style="font-size: 11px; letter-spacing: 0.5px; line-height: 1.1;">ASTON TANJUNGPINANG</h6>
+                <small class="text-muted d-block mb-1" style="font-size: 7.5px; font-weight: 600; line-height: 1;">HOTEL & CONFERENCE CENTER</small>
+                <div class="fw-bold my-1" style="font-size: 10px; border-top: 1px dashed #ccc; border-bottom: 1px dashed #ccc; padding: 1px 0;">
                     BREAKFAST VOUCHER (${index + 1}/${vouchersData.length})
                 </div>
                 ${reprintBadgeHtml}
                 ${ebBadgeHtml}
-                <div class="d-flex justify-content-between px-1 mt-1">
+                <div class="d-flex justify-content-between px-1 mt-1" style="font-size: 10px;">
                     <span>Kamar: <strong>${item.noKamar}</strong></span>
                     <span>Pax: <strong>1 Pax</strong></span>
                 </div>
-                <div class="my-1" style="font-size: 10px;">
+                <div class="my-0" style="font-size: 9.5px;">
                     Berlaku: <strong>${startBreakfastStr} s/d ${item.tglCheckout}</strong>
                 </div>
-                <div id="${qrDivId}" class="qrcode-box d-flex justify-content-center my-2"></div>
-                <small class="text-muted" style="font-size: 9px;">Tunjukkan ke staf resto (Voucher ${index + 1})</small>
-                <hr class="my-2" style="border-top: 1px dashed #888;">
+                <div id="${qrDivId}" class="qrcode-box d-flex justify-content-center my-1"></div>
+                <small class="text-muted" style="font-size: 8px;">Tunjukkan ke staf resto (Voucher ${index + 1})</small>
+                <hr class="my-1" style="border-top: 1px dashed #888;">
             `;
 
             container.appendChild(card);
