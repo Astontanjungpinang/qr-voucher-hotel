@@ -3,84 +3,155 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Resto - QR Scanner</title>
+    <title>Resto - Scan Voucher Breakfast</title>
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
     <script src="https://unpkg.com/html5-qrcode"></script>
     <style>
-        body { background-color: #121212; color: #fff; padding: 15px; }
-        #reader { width: 100%; max-width: 450px; margin: auto; border-radius: 10px; overflow: hidden; background: #000; }
-        .result-box { display: none; margin-top: 20px; }
+        body { background-color: #121212; color: #ffffff; padding: 20px; }
+        .card-resto { background-color: #1e1e1e; border: 1px solid #333; border-radius: 12px; }
+        #reader { width: 100%; border-radius: 8px; overflow: hidden; }
+        #reader video { border-radius: 8px; }
     </style>
 </head>
 <body>
-<div class="container text-center" style="max-width: 500px;">
-    <a href="index.html" class="btn btn-sm btn-outline-light mb-3 float-start">← Kembali</a>
-    <div class="clearfix"></div>
-    <h4 class="mb-3">Scan Voucher Restoran</h4>
-    
-    <div id="reader"></div>
 
-    <div id="result" class="card p-3 mt-3 result-box text-dark">
-        <h3 id="resTitle" class="fw-bold"></h3>
-        <p id="resMsg" class="fs-5 mb-0"></p>
-        <button onclick="resetScanner()" class="btn btn-primary mt-3">Scan Voucher Lain</button>
+<script>
+    if (sessionStorage.getItem('auth_RESTO') !== 'true') {
+        alert('Silakan login terlebih dahulu!');
+        window.location.href = 'index.html';
+    }
+</script>
+
+<div class="container" style="max-width: 500px;">
+    <div class="d-flex justify-content-between align-items-center mb-3">
+        <a href="index.html" class="btn btn-sm btn-outline-light">← Kembali</a>
+        <h5 class="mb-0 fw-bold">Scan Voucher Restoran</h5>
+    </div>
+
+    <!-- Container Scanner QR -->
+    <div class="card card-resto p-3 shadow-sm mb-3 text-center">
+        <div id="reader"></div>
+        <button id="btnRescan" class="btn btn-outline-warning w-100 mt-2" style="display:none;" onclick="startScanner()">
+            ↻ Scan Voucher Lain
+        </button>
+    </div>
+
+    <!-- Container Notifikasi Hasil Validasi -->
+    <div id="resultBox" class="card p-4 text-center shadow-lg" style="display:none;">
+        <h3 id="resultTitle" class="fw-bold mb-2"></h3>
+        <p id="resultKamar" class="fs-4 mb-1"></p>
+        <p id="resultPax" class="fs-5 mb-3"></p>
+        <p id="resultMsg" class="mb-3"></p>
+        <button onclick="startScanner()" class="btn btn-light fw-bold w-100 py-2">Scan Voucher Lain</button>
     </div>
 </div>
 
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
 <script>
-    const API_URL = "https://script.google.com/macros/s/AKfycbwLKrqr0Hzp1pDZ9ThyrkbCQOPrMWfx_UDwTTraKuZUr78u0WQIrQ6HvT-JlnCfduYkIw/exec";
-    let html5QrcodeScanner;
+    const API_URL = "https://script.google.com/macros/s/AKfycbxYFfGCsueJbGVdpo--wU_29Lb3oXUA6UXLLpyJVinm20xWSUQCPhSJ1nz3AFL1K8qbtQ/exec";
+    let html5QrcodeScanner = null;
     let isProcessing = false;
 
+    function getTodayString() {
+        const today = new Date();
+        const yyyy = today.getFullYear();
+        const mm = String(today.getMonth() + 1).padStart(2, '0');
+        const dd = String(today.getDate()).padStart(2, '0');
+        return `${yyyy}-${mm}-${dd}`;
+    }
+
     function onScanSuccess(decodedText, decodedResult) {
-        if(isProcessing) return;
+        if (isProcessing) return; // Mencegah scan ganda bersamaan
         isProcessing = true;
-        
-        const today = new Date().toISOString().split('T')[0];
 
-        document.getElementById('resTitle').innerText = "Memeriksa...";
-        document.getElementById('resMsg').innerText = "Sedang verifikasi ke sistem...";
-        document.getElementById('result').className = "card p-3 mt-3 result-box text-dark bg-warning";
-        document.getElementById('result').style.display = "block";
+        // 1. Langsung Hentikan Scanner Kamera Seketika
+        if (html5QrcodeScanner) {
+            html5QrcodeScanner.clear().then(() => {
+                document.getElementById('reader').style.display = 'none';
+            }).catch(err => console.error(err));
+        }
 
-        fetch(`${API_URL}?action=scan&voucherId=${decodedText}&today=${today}`)
-        .then(res => res.json())
-        .then(data => {
-            if(data.result === 'success') {
-                document.getElementById('resTitle').innerText = "BERHASIL (VALID)";
-                document.getElementById('resMsg').innerHTML = `Kamar: <strong>${data.noKamar}</strong><br>Jumlah: <strong>${data.pax} Pax</strong>`;
-                document.getElementById('result').className = "card p-3 mt-3 result-box text-white bg-success";
-            } else {
-                document.getElementById('resTitle').innerText = "VOUCHER DITOLAK";
-                document.getElementById('resMsg').innerText = data.message;
-                document.getElementById('result').className = "card p-3 mt-3 result-box text-white bg-danger";
-            }
-        })
-        .catch(err => {
-            document.getElementById('resTitle').innerText = "ERROR";
-            document.getElementById('resMsg').innerText = "Gagal terhubung ke jaringan!";
-            document.getElementById('result').className = "card p-3 mt-3 result-box text-white bg-secondary";
-        });
-    }
+        // Tampilkan Indikator Memproses Data
+        const resultBox = document.getElementById('resultBox');
+        resultBox.style.display = "block";
+        resultBox.className = "card p-4 text-center shadow-lg bg-info text-dark";
+        document.getElementById('resultTitle').innerText = "MEMPROSES...";
+        document.getElementById('resultKamar').innerText = "Memverifikasi Kode...";
+        document.getElementById('resultPax').innerText = "";
+        document.getElementById('resultMsg').innerText = "Harap tunggu sebentar";
 
-    function initScanner() {
-        // Konfigurasi ekstra agar scanner lebih peka membaca QR code buram/kecil
-        const config = { 
-            fps: 15, 
-            qrbox: { width: 250, height: 250 },
-            formatsToSupport: [ Html5QrcodeSupportedFormats.QR_CODE ]
+        // 2. Kirim Verifikasi ke Google Apps Script Backend (JSONP)
+        const callbackName = 'onScanValidated_' + Date.now();
+        window[callbackName] = function(response) {
+            delete window[callbackName];
+            showValidationResult(response);
         };
+
+        const script = document.createElement('script');
+        const todayStr = getTodayString();
+        script.src = `${API_URL}?action=scan&voucherId=${encodeURIComponent(decodedText)}&today=${todayStr}&callback=${callbackName}`;
         
-        html5QrcodeScanner = new Html5QrcodeScanner("reader", config, /* verbose= */ false);
-        html5QrcodeScanner.render(onScanSuccess);
+        script.onerror = function() {
+            showValidationResult({
+                result: 'error',
+                message: 'Gagal terhubung ke jaringan database!'
+            });
+        };
+
+        document.body.appendChild(script);
+        script.onload = () => document.body.removeChild(script);
     }
 
-    function resetScanner() {
-        document.getElementById('result').style.display = "none";
+    function showValidationResult(response) {
+        const resultBox = document.getElementById('resultBox');
+        resultBox.style.display = "block";
+
+        if (response.result === 'success') {
+            resultBox.className = "card p-4 text-center shadow-lg bg-success text-white";
+            document.getElementById('resultTitle').innerText = "BERHASIL (VALID)";
+            document.getElementById('resultKamar').innerText = `Kamar: ${response.noKamar}`;
+            document.getElementById('resultPax').innerText = `Jumlah: ${response.pax} Pax`;
+            document.getElementById('resultMsg').innerText = response.message || "Voucher dapat digunakan.";
+        } else {
+            resultBox.className = "card p-4 text-center shadow-lg bg-danger text-white";
+            document.getElementById('resultTitle').innerText = "TIDAK VALID!";
+            document.getElementById('resultKamar').innerText = "";
+            document.getElementById('resultPax').innerText = "";
+            document.getElementById('resultMsg').innerText = response.message || "Voucher tidak dapat digunakan.";
+        }
+
+        document.getElementById('btnRescan').style.display = 'block';
+    }
+
+    function startScanner() {
         isProcessing = false;
+        document.getElementById('resultBox').style.display = 'none';
+        document.getElementById('btnRescan').style.display = 'none';
+        document.getElementById('reader').style.display = 'block';
+
+        if (html5QrcodeScanner) {
+            html5QrcodeScanner.clear().catch(() => {});
+        }
+
+        html5QrcodeScanner = new Html5QrcodeScanner(
+            "reader", 
+            { 
+                fps: 15, 
+                qrbox: { width: 220, height: 220 },
+                aspectRatio: 1.0
+            },
+            /* verbose= */ false
+        );
+
+        html5QrcodeScanner.render(onScanSuccess, onScanFailure);
     }
 
-    initScanner();
+    function onScanFailure(error) {
+        // Mengabaikan frame scan normal yang belum menemukan QR
+    }
+
+    // Jalankan scanner otomatis saat halaman pertama dibuka
+    document.addEventListener('DOMContentLoaded', startScanner);
 </script>
 </body>
 </html>
