@@ -18,8 +18,13 @@
 <body>
 
 <script>
-    // Sesuaikan dengan key sessionStorage yang dipakai di index.html Anda
-    if (sessionStorage.getItem('auth_ACC') !== 'true' && sessionStorage.getItem('auth_REPORT') !== 'true') {
+    // Mengecek semua kemungkinan nama kunci sesi dari index.html
+    const isAuth = sessionStorage.getItem('auth_FINANCE') === 'true' || 
+                   sessionStorage.getItem('auth_ACC') === 'true' || 
+                   sessionStorage.getItem('auth_ACCOUNTING') === 'true' ||
+                   sessionStorage.getItem('auth_REPORT') === 'true';
+
+    if (!isAuth) {
         alert('Silakan login terlebih dahulu melalui menu utama!');
         window.location.href = 'index.html';
     }
