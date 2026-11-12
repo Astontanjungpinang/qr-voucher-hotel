@@ -6,8 +6,30 @@
     <title>Accounting Report - QR Breakfast Voucher</title>
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
     <style>
-        body { background-color: #f4f6f9; padding: 20px; font-family: sans-serif; }
-        .table-responsive { max-height: 62vh; overflow-y: auto; }
+        html, body { 
+            height: 100%; 
+            margin: 0; 
+            background-color: #f4f6f9; 
+            font-family: sans-serif; 
+        }
+        .main-wrapper {
+            min-height: 100vh;
+            width: 100%;
+            padding: 15px 20px;
+            display: flex;
+            flex-direction: column;
+        }
+        .table-card {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            overflow: hidden;
+        }
+        .table-responsive { 
+            flex: 1;
+            max-height: calc(100vh - 270px); 
+            overflow-y: auto; 
+        }
         .voucher-link { 
             font-family: monospace; 
             font-weight: bold; 
@@ -16,10 +38,16 @@
             cursor: pointer; 
             text-decoration: underline;
         }
-        .voucher-link:hover { color: #0a58ca; background-color: #e9ecef; padding: 2px 4px; border-radius: 4px; }
+        .voucher-link:hover { 
+            color: #0a58ca; 
+            background-color: #e9ecef; 
+            padding: 2px 4px; 
+            border-radius: 4px; 
+        }
         @media print {
             .no-print { display: none !important; }
-            .table-responsive { max-height: none; overflow: visible; }
+            .main-wrapper { padding: 0; display: block; }
+            .table-responsive { max-height: none !important; overflow: visible !important; }
         }
     </style>
 </head>
@@ -37,13 +65,13 @@
     }
 </script>
 
-<div class="container-fluid" style="max-width: 1250px;">
+<div class="container-fluid main-wrapper">
+    <!-- Header Bar -->
     <div class="d-flex justify-content-between align-items-center mb-3 no-print">
         <a href="index.html" class="btn btn-sm btn-outline-secondary">← Kembali ke Menu Utama</a>
         <h4 class="fw-bold text-dark mb-0">Laporan Rekonsiliasi & Audit Voucher Breakfast</h4>
         <div>
-            <button onclick="exportToCSV()" class="btn btn-sm btn-success fw-bold">Export Excel (CSV)</button>
-            <button onclick="window.print()" class="btn btn-sm btn-dark fw-bold">Cetak Laporan</button>
+            <button onclick="window.print()" class="btn btn-sm btn-dark fw-bold px-3">Cetak Laporan</button>
         </div>
     </div>
 
@@ -68,49 +96,55 @@
         </div>
     </div>
 
-    <!-- Ringkasan Audit & Persentase Rekonsiliasi (5 KPI Cards) -->
+    <!-- Ringkasan Audit (6 KPI Cards sejajar penuh 1 layar) -->
     <div class="row g-2 mb-3">
-        <div class="col-md col-6">
-            <div class="card p-2 border-start border-primary border-4 shadow-sm h-100">
+        <div class="col-lg-2 col-md-4 col-6">
+            <div class="card p-2 border-start border-secondary border-4 shadow-sm h-100 bg-white">
+                <small class="text-muted fw-bold">Total Kamar</small>
+                <h4 class="fw-bold mb-0 text-secondary" id="statTotalKamar">0</h4>
+            </div>
+        </div>
+        <div class="col-lg-2 col-md-4 col-6">
+            <div class="card p-2 border-start border-primary border-4 shadow-sm h-100 bg-white">
                 <small class="text-muted fw-bold">Total Voucher Terbit</small>
                 <h4 class="fw-bold mb-0 text-primary" id="statTotalVoucher">0</h4>
             </div>
         </div>
-        <div class="col-md col-6">
-            <div class="card p-2 border-start border-success border-4 shadow-sm h-100">
+        <div class="col-lg-2 col-md-4 col-6">
+            <div class="card p-2 border-start border-success border-4 shadow-sm h-100 bg-white">
                 <small class="text-muted fw-bold">Total Scan Terpakai</small>
                 <h4 class="fw-bold mb-0 text-success" id="statTotalScan">0</h4>
             </div>
         </div>
-        <div class="col-md col-12">
+        <div class="col-lg-2 col-md-4 col-6">
             <div class="card p-2 border-start border-dark border-4 shadow-sm h-100 bg-white">
                 <small class="text-muted fw-bold">Persentase Rekonsiliasi</small>
-                <div class="d-flex align-items-baseline gap-2">
+                <div class="d-flex align-items-baseline gap-1">
                     <h4 class="fw-bold mb-0 text-dark" id="statReconPercent">0%</h4>
-                    <small class="text-muted" id="statReconDetail" style="font-size: 0.75rem;">(0 / 0 Jatah)</small>
+                    <small class="text-muted" id="statReconDetail" style="font-size: 0.72rem;">(0/0)</small>
                 </div>
             </div>
         </div>
-        <div class="col-md col-6">
-            <div class="card p-2 border-start border-warning border-4 shadow-sm h-100">
+        <div class="col-lg-2 col-md-4 col-6">
+            <div class="card p-2 border-start border-warning border-4 shadow-sm h-100 bg-white">
                 <small class="text-muted fw-bold">Extra Bed (Paid)</small>
                 <h4 class="fw-bold mb-0 text-warning" id="statEbPaid">0</h4>
             </div>
         </div>
-        <div class="col-md col-6">
-            <div class="card p-2 border-start border-info border-4 shadow-sm h-100">
+        <div class="col-lg-2 col-md-4 col-6">
+            <div class="card p-2 border-start border-info border-4 shadow-sm h-100 bg-white">
                 <small class="text-muted fw-bold">Extra Bed (Compliment)</small>
                 <h4 class="fw-bold mb-0 text-info" id="statEbComp">0</h4>
             </div>
         </div>
     </div>
 
-    <!-- Tabel Data Audit & Nomor Voucher -->
-    <div class="card shadow-sm">
+    <!-- Tabel Data Audit & Nomor Voucher (Full Height) -->
+    <div class="card shadow-sm table-card">
         <div class="card-header bg-white py-2 d-flex justify-content-between align-items-center no-print">
             <span class="small text-muted">💡 <strong>Tips Audit:</strong> Klik pada <strong>Nomor Voucher (ID)</strong> untuk melihat detail lengkap data voucher (Display Only).</span>
         </div>
-        <div class="card-body p-0">
+        <div class="card-body p-0 d-flex flex-column" style="overflow: hidden;">
             <div class="table-responsive">
                 <table class="table table-hover table-bordered align-middle mb-0" id="reportTable" style="font-size: 0.88rem;">
                     <thead class="table-dark sticky-top">
@@ -138,7 +172,7 @@
     </div>
 </div>
 
-<!-- Modal Display-Only Detail Voucher (Pengganti Buka Google Sheet Langsung) -->
+<!-- Modal Display-Only Detail Voucher -->
 <div class="modal fade" id="voucherDetailModal" tabindex="-1" aria-hidden="true">
     <div class="modal-dialog modal-dialog-centered">
         <div class="modal-content border-0 shadow">
@@ -202,7 +236,7 @@
 
 <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
 <script>
-    const API_URL = "https://script.google.com/macros/s/AKfycbzZMS-0vb4LvuQjYFBXyKYoyGlkMJS4h1SDOQzf_hnMLL-_bZqlzbIe6mM3bHeSdbRCZQ/exec";
+    const API_URL = "https://script.google.com/macros/s/AKfycbw8XQRbkQbifI3mW3USKakTNroeabdL-HSCspHuPH6tqojd_SaSxBb76iOduBhyUtPurw/exec";
     let currentReportData = [];
     let detailModalInstance = null;
 
@@ -253,10 +287,9 @@
         renderTable(currentReportData);
     };
 
-    // Hitung total hak sarapan (jatah hari) dalam rentang filter agar % rekonsiliasi akurat untuk multi-night
     function calculateExpectedEntitlement(item, filterStart, filterEnd) {
         const cIn = new Date(item.tglCheckin + "T00:00:00");
-        cIn.setDate(cIn.getDate() + 1); // Mulai sarapan H+1
+        cIn.setDate(cIn.getDate() + 1);
         const cOut = new Date(item.tglCheckout + "T00:00:00");
 
         let effectiveStart = cIn;
@@ -283,6 +316,8 @@
         const startDate = document.getElementById('startDate').value;
         const endDate = document.getElementById('endDate').value;
 
+        // Menghitung jumlah kamar unik yang menerima voucher
+        const uniqueRooms = new Set();
         let totalVoucher = data.length;
         let totalScan = 0;
         let totalEntitlement = 0;
@@ -293,6 +328,10 @@
             tbody.innerHTML = `<tr><td colspan="10" class="text-center py-4 text-muted">Tidak ada data voucher pada rentang tanggal ini.</td></tr>`;
         } else {
             data.forEach((item, index) => {
+                if (item.noKamar) {
+                    uniqueRooms.add(item.noKamar.toString().trim());
+                }
+
                 totalScan += parseInt(item.totalScan || 0);
                 totalEntitlement += calculateExpectedEntitlement(item, startDate, endDate);
 
@@ -324,16 +363,16 @@
             });
         }
 
-        // Hitung persentase rekonsiliasi
         let reconPercent = 0;
         if (totalEntitlement > 0) {
             reconPercent = ((totalScan / totalEntitlement) * 100).toFixed(1);
         }
 
+        document.getElementById('statTotalKamar').innerText = uniqueRooms.size;
         document.getElementById('statTotalVoucher').innerText = totalVoucher;
         document.getElementById('statTotalScan').innerText = totalScan;
         document.getElementById('statReconPercent').innerText = `${reconPercent}%`;
-        document.getElementById('statReconDetail').innerText = `(${totalScan} / ${totalEntitlement} Jatah)`;
+        document.getElementById('statReconDetail').innerText = `(${totalScan}/${totalEntitlement})`;
         document.getElementById('statEbPaid').innerText = ebPaid;
         document.getElementById('statEbComp').innerText = ebComp;
     }
@@ -342,7 +381,6 @@
         const item = currentReportData.find(v => v.voucherId === voucherId);
         if (!item) return;
 
-        // Hitung tanggal mulai sarapan (H+1)
         const cIn = new Date(item.tglCheckin + "T00:00:00");
         cIn.setDate(cIn.getDate() + 1);
         const startBreakfast = cIn.toISOString().split('T')[0];
@@ -376,26 +414,6 @@
             item.noKamar.toLowerCase().includes(keyword)
         );
         renderTable(filtered);
-    }
-
-    function exportToCSV() {
-        if (currentReportData.length === 0) {
-            alert("Tidak ada data untuk di-export!");
-            return;
-        }
-        const startDate = document.getElementById('startDate').value;
-        const endDate = document.getElementById('endDate').value;
-
-        let csv = "No,Nomor Voucher,No Kamar,Pax,Check-in,Check-out,Kategori,Status,Jumlah Scan,Riwayat Waktu Scan\n";
-        currentReportData.forEach((row, idx) => {
-            csv += `${idx + 1},"${row.voucherId}","${row.noKamar}",${row.pax},"${row.tglCheckin}","${row.tglCheckout}","${row.ebType}","${row.status}",${row.totalScan},"${row.historyScan}"\n`;
-        });
-
-        const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
-        const link = document.createElement("a");
-        link.href = URL.createObjectURL(blob);
-        link.download = `Rekap_Voucher_Breakfast_${startDate}_sd_${endDate}.csv`;
-        link.click();
     }
 </script>
 </body>
