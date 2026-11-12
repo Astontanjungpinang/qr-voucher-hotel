@@ -3,115 +3,109 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Accounting Report - Breakfast Reconciliation</title>
+    <title>Accounting Report - QR Breakfast Voucher</title>
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
     <style>
-        body { background-color: #f8f9fa; padding: 20px; font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; }
-        .card-stat { border-left: 4px solid #0d6efd; }
+        body { background-color: #f4f6f9; padding: 20px; font-family: sans-serif; }
+        .table-responsive { max-height: 65vh; overflow-y: auto; }
+        .voucher-code { font-family: monospace; font-weight: bold; color: #0d6efd; font-size: 0.9rem; }
         @media print {
             .no-print { display: none !important; }
-            body { background: white; padding: 0; }
-            .card { border: none !important; box-shadow: none !important; }
+            .table-responsive { max-height: none; overflow: visible; }
         }
     </style>
 </head>
 <body>
 
 <script>
-    if (sessionStorage.getItem('auth_FINANCE') !== 'true') {
-        alert('Akses Ditolak! Silakan login sebagai Accounting.');
+    // Sesuaikan dengan key sessionStorage yang dipakai di index.html Anda
+    if (sessionStorage.getItem('auth_ACC') !== 'true' && sessionStorage.getItem('auth_REPORT') !== 'true') {
+        alert('Silakan login terlebih dahulu melalui menu utama!');
         window.location.href = 'index.html';
     }
 </script>
 
-<div class="container-fluid">
-    <!-- Header Navigation & Filter -->
-    <div class="d-flex flex-wrap justify-content-between align-items-center mb-4 no-print gap-3">
+<div class="container-fluid" style="max-width: 1200px;">
+    <div class="d-flex justify-content-between align-items-center mb-3 no-print">
+        <a href="index.html" class="btn btn-sm btn-outline-secondary">← Kembali ke Menu Utama</a>
+        <h4 class="fw-bold text-dark mb-0">Laporan Rekonsiliasi & Audit Voucher Breakfast</h4>
         <div>
-            <a href="index.html" class="btn btn-outline-secondary btn-sm me-2">← Main Menu</a>
-            <h3 class="d-inline align-middle fw-bold text-dark">Finance & Accounting Breakfast Reconciliation</h3>
-        </div>
-        
-        <div class="d-flex align-items-center gap-2">
-            <div class="input-group input-group-sm" style="width: auto;">
-                <span class="input-group-text bg-white fw-bold">Tgl Audit:</span>
-                <input type="date" id="filterDate" class="form-control" onchange="loadReport()">
-            </div>
-            <button onclick="clearFilter()" class="btn btn-sm btn-outline-danger">Reset</button>
-            <button onclick="window.print()" class="btn btn-sm btn-primary">🖶 Export PDF</button>
-            <button onclick="loadReport()" class="btn btn-sm btn-success">↻ Refresh</button>
+            <button onclick="exportToCSV()" class="btn btn-sm btn-success fw-bold">Export Excel (CSV)</button>
+            <button onclick="window.print()" class="btn btn-sm btn-dark fw-bold">Cetak Laporan</button>
         </div>
     </div>
 
-    <!-- 7 Kartu Statistik Utama Accounting (Lengkap) -->
-    <div class="row g-2 mb-4">
-        <div class="col-md-2 col-sm-4">
-            <div class="card card-stat p-2 bg-white shadow-sm" style="border-left-color: #0d6efd;">
-                <small class="text-muted fw-bold" style="font-size: 11px;">TOTAL KAMAR</small>
-                <h3 class="fw-bold mb-0 text-primary" id="statTotalKamar">0</h3>
+    <!-- Filter Rentang Tanggal & Pencarian Nomor Voucher -->
+    <div class="card p-3 mb-3 shadow-sm no-print">
+        <div class="row g-2 align-items-end">
+            <div class="col-md-3">
+                <label class="form-label fw-bold small mb-1">Dari Tanggal (Start Date)</label>
+                <input type="date" id="startDate" class="form-control form-control-sm">
             </div>
-        </div>
-        <div class="col-md-2 col-sm-4">
-            <div class="card card-stat p-2 bg-white shadow-sm" style="border-left-color: #6c757d;">
-                <small class="text-muted fw-bold" style="font-size: 11px;">TOTAL VOUCHER</small>
-                <h3 class="fw-bold mb-0 text-secondary" id="statTotalVoucher">0</h3>
+            <div class="col-md-3">
+                <label class="form-label fw-bold small mb-1">Sampai Tanggal (End Date)</label>
+                <input type="date" id="endDate" class="form-control form-control-sm">
             </div>
-        </div>
-        <div class="col-md-2 col-sm-4">
-            <div class="card card-stat p-2 bg-white shadow-sm" style="border-left-color: #198754;">
-                <small class="text-muted fw-bold" style="font-size: 11px;">TOTAL PAX</small>
-                <h3 class="fw-bold mb-0 text-success" id="statTotalPax">0</h3>
+            <div class="col-md-2">
+                <button onclick="loadReport()" id="btnFilter" class="btn btn-primary btn-sm w-100 fw-bold">Tampilkan Data</button>
             </div>
-        </div>
-        <div class="col-md-2 col-sm-4">
-            <div class="card card-stat p-2 bg-white shadow-sm" style="border-left-color: #fd7e14;">
-                <small class="text-muted fw-bold" style="font-size: 11px;">EXTRA BED PAID</small>
-                <h3 class="fw-bold mb-0 text-warning" id="statEBPaid">0</h3>
-            </div>
-        </div>
-        <div class="col-md-2 col-sm-4">
-            <div class="card card-stat p-2 bg-white shadow-sm" style="border-left-color: #20c997;">
-                <small class="text-muted fw-bold" style="font-size: 11px;">EB COMPLIMENT</small>
-                <h3 class="fw-bold mb-0 text-info" id="statEBComp">0</h3>
-            </div>
-        </div>
-        <div class="col-md-1 col-sm-4" style="flex: 0 0 auto; width: 12.5%;">
-            <div class="card card-stat p-2 bg-white shadow-sm" style="border-left-color: #ffc107;">
-                <small class="text-muted fw-bold" style="font-size: 11px;">TOTAL SCAN</small>
-                <h3 class="fw-bold mb-0 text-dark" id="statTotalScan">0</h3>
-            </div>
-        </div>
-        <div class="col-md-1 col-sm-4" style="flex: 0 0 auto; width: 12.5%;">
-            <div class="card card-stat p-2 bg-white shadow-sm" style="border-left-color: #dc3545;">
-                <small class="text-muted fw-bold" style="font-size: 11px;">RATE (%)</small>
-                <h3 class="fw-bold mb-0 text-danger" id="statRate">0%</h3>
+            <div class="col-md-4">
+                <label class="form-label fw-bold small mb-1">Cari Nomor Voucher / Kamar</label>
+                <input type="text" id="searchInput" onkeyup="filterTable()" class="form-control form-control-sm" placeholder="Ketik VCH-xxx atau No. Kamar...">
             </div>
         </div>
     </div>
 
-    <!-- Tabel Audit Detail -->
+    <!-- Ringkasan Audit (KPI Cards) -->
+    <div class="row g-2 mb-3">
+        <div class="col-md-3 col-6">
+            <div class="card p-2 border-start border-primary border-4 shadow-sm">
+                <small class="text-muted fw-bold">Total Voucher Terbit</small>
+                <h4 class="fw-bold mb-0 text-primary" id="statTotalVoucher">0</h4>
+            </div>
+        </div>
+        <div class="col-md-3 col-6">
+            <div class="card p-2 border-start border-success border-4 shadow-sm">
+                <small class="text-muted fw-bold">Total Scan Terpakai</small>
+                <h4 class="fw-bold mb-0 text-success" id="statTotalScan">0</h4>
+            </div>
+        </div>
+        <div class="col-md-3 col-6">
+            <div class="card p-2 border-start border-warning border-4 shadow-sm">
+                <small class="text-muted fw-bold">Extra Bed (Paid)</small>
+                <h4 class="fw-bold mb-0 text-warning" id="statEbPaid">0</h4>
+            </div>
+        </div>
+        <div class="col-md-3 col-6">
+            <div class="card p-2 border-start border-info border-4 shadow-sm">
+                <small class="text-muted fw-bold">Extra Bed (Compliment)</small>
+                <h4 class="fw-bold mb-0 text-info" id="statEbComp">0</h4>
+            </div>
+        </div>
+    </div>
+
+    <!-- Tabel Data Audit & Nomor Voucher -->
     <div class="card shadow-sm">
-        <div class="card-header bg-white py-3 d-flex justify-content-between align-items-center">
-            <h5 class="mb-0 fw-bold">Laporan Rekonsiliasi Sarapan per Kamar</h5>
-            <small class="text-muted" id="filterStatusInfo">Menampilkan seluruh data</small>
-        </div>
         <div class="card-body p-0">
             <div class="table-responsive">
-                <table class="table table-hover table-striped align-middle mb-0">
-                    <thead class="table-dark">
+                <table class="table table-hover table-bordered align-middle mb-0" id="reportTable" style="font-size: 0.88rem;">
+                    <thead class="table-dark sticky-top">
                         <tr>
-                            <th>No Kamar</th>
-                            <th>Pax / Kamar</th>
-                            <th>Rincian Extra Bed</th>
-                            <th>Tgl Check-in</th>
-                            <th>Tgl Check-out</th>
-                            <th>Total Scan</th>
-                            <th>Status Audit</th>
+                            <th>No</th>
+                            <th>Nomor Voucher (ID)</th>
+                            <th>Kamar</th>
+                            <th>Pax</th>
+                            <th>Check-in</th>
+                            <th>Check-out</th>
+                            <th>Kategori</th>
+                            <th>Status</th>
+                            <th>Jml Scan</th>
+                            <th>Riwayat Waktu Scan</th>
                         </tr>
                     </thead>
-                    <tbody id="reportContent">
+                    <tbody id="reportTableBody">
                         <tr>
-                            <td colspan="7" class="text-center py-4">Memuat data dari server database...</td>
+                            <td colspan="10" class="text-center py-4 text-muted">Memuat data laporan...</td>
                         </tr>
                     </tbody>
                 </table>
@@ -120,115 +114,136 @@
     </div>
 </div>
 
-<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
 <script>
-    const API_URL = "https://script.google.com/macros/s/AKfycbyRElG2RggqHfjmzhDVQ54igLKclocBSN8rgBq6sT0ISH3eH7XX7EgIfYJskgTXBw6b/exec";
+    const API_URL = "https://script.google.com/macros/s/AKfycbw2Ex1G8Shy0LLy_3ymZnHJFmNhMUl6zilLobsjPJcgW91eL72z4oBv8NvFsaPfeWTU/exec";
+    let currentReportData = [];
+
+    // Set default tanggal: Tanggal 1 bulan berjalan s/d Tanggal 30/akhir bulan
+    window.onload = function() {
+        const now = new Date();
+        const year = now.getFullYear();
+        const month = String(now.getMonth() + 1).padStart(2, '0');
+        const lastDay = new Date(year, now.getMonth() + 1, 0).getDate();
+
+        document.getElementById('startDate').value = `${year}-${month}-01`;
+        document.getElementById('endDate').value = `${year}-${month}-${String(lastDay).padStart(2, '0')}`;
+        
+        loadReport();
+    };
 
     function loadReport() {
-        const tableBody = document.getElementById('reportContent');
-        const selectedDate = document.getElementById('filterDate').value;
-        
-        tableBody.innerHTML = `<tr><td colspan="7" class="text-center py-4 text-primary">Memuat data terbaru...</td></tr>`;
+        const btn = document.getElementById('btnFilter');
+        btn.disabled = true;
+        btn.innerText = "Memuat...";
 
-        if (selectedDate) {
-            document.getElementById('filterStatusInfo').innerText = `Filter Tanggal Audit: ${selectedDate}`;
-        } else {
-            document.getElementById('filterStatusInfo').innerText = `Menampilkan seluruh data`;
-        }
+        const startDate = document.getElementById('startDate').value;
+        const endDate = document.getElementById('endDate').value;
 
         const script = document.createElement('script');
-        script.src = `${API_URL}?action=report&date=${encodeURIComponent(selectedDate)}&callback=renderReportData&_=${Date.now()}`;
+        script.src = `${API_URL}?action=report&startDate=${startDate}&endDate=${endDate}&callback=onReportLoaded`;
+        script.onerror = function() {
+            alert("Gagal mengambil data laporan dari server.");
+            btn.disabled = false;
+            btn.innerText = "Tampilkan Data";
+        };
         document.body.appendChild(script);
         script.onload = () => document.body.removeChild(script);
     }
 
-    function clearFilter() {
-        document.getElementById('filterDate').value = "";
-        loadReport();
-    }
+    window.onReportLoaded = function(res) {
+        const btn = document.getElementById('btnFilter');
+        btn.disabled = false;
+        btn.innerText = "Tampilkan Data";
 
-    window.renderReportData = function(response) {
-        const tableBody = document.getElementById('reportContent');
-        
-        if (!response || response.result !== 'success') {
-            tableBody.innerHTML = `<tr><td colspan="7" class="text-center py-4 text-danger">${(response && response.message) ? response.message : 'Gagal memuat laporan.'}</td></tr>`;
+        if (res.result !== 'success') {
+            alert(res.message || "Terjadi kesalahan saat memuat laporan.");
             return;
         }
 
-        const data = response.data || [];
-        if (data.length === 0) {
-            tableBody.innerHTML = `<tr><td colspan="7" class="text-center py-4 text-muted">Tidak ada data transaksi sarapan untuk tanggal ini.</td></tr>`;
-            document.getElementById('statTotalKamar').innerText = '0';
-            document.getElementById('statTotalVoucher').innerText = '0';
-            document.getElementById('statTotalPax').innerText = '0';
-            document.getElementById('statEBPaid').innerText = '0';
-            document.getElementById('statEBComp').innerText = '0';
-            document.getElementById('statTotalScan').innerText = '0';
-            document.getElementById('statRate').innerText = '0%';
-            return;
-        }
-
-        let html = '';
-        let totalPax = 0;
-        let totalEBPaid = 0;
-        let totalEBComp = 0;
-        let totalScan = 0;
-        const kamarSet = new Set();
-
-        data.forEach(row => {
-            const paxNum = parseInt(row.pax || 0);
-            const scanNum = parseInt(row.totalScan || 0);
-            const ebType = row.ebType || 'none';
-            
-            if (row.noKamar) {
-                kamarSet.add(row.noKamar.toString().trim());
-            }
-
-            totalPax += paxNum;
-            totalScan += scanNum;
-
-            let ebBadge = '<span class="badge bg-light text-dark border">Tanpa Extra Bed</span>';
-            if (ebType === 'paid') {
-                totalEBPaid += 1;
-                ebBadge = '<span class="badge bg-warning text-dark">+1 EB (Paid)</span>';
-            } else if (ebType === 'compliment') {
-                totalEBComp += 1;
-                ebBadge = '<span class="badge bg-success">+1 EB (Compliment)</span>';
-            }
-
-            let statusBadge = '<span class="badge bg-success">Valid / Redeemed</span>';
-            if (scanNum === 0) {
-                statusBadge = '<span class="badge bg-secondary">No Show</span>';
-            }
-
-            html += `
-                <tr>
-                    <td><strong>${row.noKamar || '-'}</strong></td>
-                    <td>${paxNum} Pax</td>
-                    <td>${ebBadge}</td>
-                    <td>${row.tglCheckin || '-'}</td>
-                    <td>${row.tglCheckout || '-'}</td>
-                    <td><span class="badge bg-info text-dark font-monospace fs-6">${scanNum} Kali</span></td>
-                    <td>${statusBadge}</td>
-                </tr>
-            `;
-        });
-
-        tableBody.innerHTML = html;
-        
-        // Update 7 Kartu Statistik Finance
-        document.getElementById('statTotalKamar').innerText = kamarSet.size;
-        document.getElementById('statTotalVoucher').innerText = data.length;
-        document.getElementById('statTotalPax').innerText = totalPax;
-        document.getElementById('statEBPaid').innerText = totalEBPaid;
-        document.getElementById('statEBComp').innerText = totalEBComp;
-        document.getElementById('statTotalScan').innerText = totalScan;
-        
-        const rate = data.length > 0 ? Math.round((totalScan / data.length) * 100) : 0;
-        document.getElementById('statRate').innerText = rate + '%';
+        currentReportData = res.data || [];
+        renderTable(currentReportData);
     };
 
-    document.addEventListener('DOMContentLoaded', loadReport);
+    function renderTable(data) {
+        const tbody = document.getElementById('reportTableBody');
+        tbody.innerHTML = "";
+
+        let totalVoucher = data.length;
+        let totalScan = 0;
+        let ebPaid = 0;
+        let ebComp = 0;
+
+        if (data.length === 0) {
+            tbody.innerHTML = `<tr><td colspan="10" class="text-center py-4 text-muted">Tidak ada data voucher pada rentang tanggal ini.</td></tr>`;
+        } else {
+            data.forEach((item, index) => {
+                totalScan += parseInt(item.totalScan || 0);
+                if (item.ebType === 'paid') ebPaid++;
+                if (item.ebType === 'compliment') ebComp++;
+
+                let badgeCat = '<span class="badge bg-secondary">Regular</span>';
+                if (item.ebType === 'paid') badgeCat = '<span class="badge bg-warning text-dark">EB Paid</span>';
+                if (item.ebType === 'compliment') badgeCat = '<span class="badge bg-info text-dark">EB Compliment</span>';
+
+                let badgeStatus = `<span class="badge bg-success">${item.status}</span>`;
+                if (item.status === 'REDEEMED') badgeStatus = `<span class="badge bg-primary">REDEEMED</span>`;
+                if (item.status === 'EXPIRED') badgeStatus = `<span class="badge bg-danger">EXPIRED</span>`;
+
+                const tr = document.createElement('tr');
+                tr.innerHTML = `
+                    <td>${index + 1}</td>
+                    <td class="voucher-code">${item.voucherId}</td>
+                    <td class="fw-bold">${item.noKamar}</td>
+                    <td>${item.pax}</td>
+                    <td>${item.tglCheckin}</td>
+                    <td>${item.tglCheckout}</td>
+                    <td>${badgeCat}</td>
+                    <td>${badgeStatus}</td>
+                    <td class="fw-bold text-center">${item.totalScan}x</td>
+                    <td class="small text-muted">${item.historyScan || '-'}</td>
+                `;
+                tbody.appendChild(tr);
+            });
+        }
+
+        document.getElementById('statTotalVoucher').innerText = totalVoucher;
+        document.getElementById('statTotalScan').innerText = totalScan;
+        document.getElementById('statEbPaid').innerText = ebPaid;
+        document.getElementById('statEbComp').innerText = ebComp;
+    }
+
+    function filterTable() {
+        const keyword = document.getElementById('searchInput').value.toLowerCase().trim();
+        if (!keyword) {
+            renderTable(currentReportData);
+            return;
+        }
+        const filtered = currentReportData.filter(item => 
+            item.voucherId.toLowerCase().includes(keyword) || 
+            item.noKamar.toLowerCase().includes(keyword)
+        );
+        renderTable(filtered);
+    }
+
+    function exportToCSV() {
+        if (currentReportData.length === 0) {
+            alert("Tidak ada data untuk di-export!");
+            return;
+        }
+        const startDate = document.getElementById('startDate').value;
+        const endDate = document.getElementById('endDate').value;
+
+        let csv = "No,Nomor Voucher,No Kamar,Pax,Check-in,Check-out,Kategori,Status,Jumlah Scan,Riwayat Waktu Scan\n";
+        currentReportData.forEach((row, idx) => {
+            csv += `${idx + 1},"${row.voucherId}","${row.noKamar}",${row.pax},"${row.tglCheckin}","${row.tglCheckout}","${row.ebType}","${row.status}",${row.totalScan},"${row.historyScan}"\n`;
+        });
+
+        const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
+        const link = document.createElement("a");
+        link.href = URL.createObjectURL(blob);
+        link.download = `Rekap_Voucher_Breakfast_${startDate}_sd_${endDate}.csv`;
+        link.click();
+    }
 </script>
 </body>
 </html>
