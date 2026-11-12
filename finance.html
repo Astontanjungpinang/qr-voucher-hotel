@@ -7,8 +7,16 @@
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
     <style>
         body { background-color: #f4f6f9; padding: 20px; font-family: sans-serif; }
-        .table-responsive { max-height: 65vh; overflow-y: auto; }
-        .voucher-code { font-family: monospace; font-weight: bold; color: #0d6efd; font-size: 0.9rem; }
+        .table-responsive { max-height: 62vh; overflow-y: auto; }
+        .voucher-link { 
+            font-family: monospace; 
+            font-weight: bold; 
+            color: #0d6efd; 
+            font-size: 0.9rem; 
+            cursor: pointer; 
+            text-decoration: underline;
+        }
+        .voucher-link:hover { color: #0a58ca; background-color: #e9ecef; padding: 2px 4px; border-radius: 4px; }
         @media print {
             .no-print { display: none !important; }
             .table-responsive { max-height: none; overflow: visible; }
@@ -18,7 +26,6 @@
 <body>
 
 <script>
-    // Mengecek semua kemungkinan nama kunci sesi dari index.html
     const isAuth = sessionStorage.getItem('auth_FINANCE') === 'true' || 
                    sessionStorage.getItem('auth_ACC') === 'true' || 
                    sessionStorage.getItem('auth_ACCOUNTING') === 'true' ||
@@ -30,7 +37,7 @@
     }
 </script>
 
-<div class="container-fluid" style="max-width: 1200px;">
+<div class="container-fluid" style="max-width: 1250px;">
     <div class="d-flex justify-content-between align-items-center mb-3 no-print">
         <a href="index.html" class="btn btn-sm btn-outline-secondary">← Kembali ke Menu Utama</a>
         <h4 class="fw-bold text-dark mb-0">Laporan Rekonsiliasi & Audit Voucher Breakfast</h4>
@@ -61,28 +68,37 @@
         </div>
     </div>
 
-    <!-- Ringkasan Audit (KPI Cards) -->
+    <!-- Ringkasan Audit & Persentase Rekonsiliasi (5 KPI Cards) -->
     <div class="row g-2 mb-3">
-        <div class="col-md-3 col-6">
-            <div class="card p-2 border-start border-primary border-4 shadow-sm">
+        <div class="col-md col-6">
+            <div class="card p-2 border-start border-primary border-4 shadow-sm h-100">
                 <small class="text-muted fw-bold">Total Voucher Terbit</small>
                 <h4 class="fw-bold mb-0 text-primary" id="statTotalVoucher">0</h4>
             </div>
         </div>
-        <div class="col-md-3 col-6">
-            <div class="card p-2 border-start border-success border-4 shadow-sm">
+        <div class="col-md col-6">
+            <div class="card p-2 border-start border-success border-4 shadow-sm h-100">
                 <small class="text-muted fw-bold">Total Scan Terpakai</small>
                 <h4 class="fw-bold mb-0 text-success" id="statTotalScan">0</h4>
             </div>
         </div>
-        <div class="col-md-3 col-6">
-            <div class="card p-2 border-start border-warning border-4 shadow-sm">
+        <div class="col-md col-12">
+            <div class="card p-2 border-start border-dark border-4 shadow-sm h-100 bg-white">
+                <small class="text-muted fw-bold">Persentase Rekonsiliasi</small>
+                <div class="d-flex align-items-baseline gap-2">
+                    <h4 class="fw-bold mb-0 text-dark" id="statReconPercent">0%</h4>
+                    <small class="text-muted" id="statReconDetail" style="font-size: 0.75rem;">(0 / 0 Jatah)</small>
+                </div>
+            </div>
+        </div>
+        <div class="col-md col-6">
+            <div class="card p-2 border-start border-warning border-4 shadow-sm h-100">
                 <small class="text-muted fw-bold">Extra Bed (Paid)</small>
                 <h4 class="fw-bold mb-0 text-warning" id="statEbPaid">0</h4>
             </div>
         </div>
-        <div class="col-md-3 col-6">
-            <div class="card p-2 border-start border-info border-4 shadow-sm">
+        <div class="col-md col-6">
+            <div class="card p-2 border-start border-info border-4 shadow-sm h-100">
                 <small class="text-muted fw-bold">Extra Bed (Compliment)</small>
                 <h4 class="fw-bold mb-0 text-info" id="statEbComp">0</h4>
             </div>
@@ -91,6 +107,9 @@
 
     <!-- Tabel Data Audit & Nomor Voucher -->
     <div class="card shadow-sm">
+        <div class="card-header bg-white py-2 d-flex justify-content-between align-items-center no-print">
+            <span class="small text-muted">💡 <strong>Tips Audit:</strong> Klik pada <strong>Nomor Voucher (ID)</strong> untuk melihat detail lengkap data voucher (Display Only).</span>
+        </div>
         <div class="card-body p-0">
             <div class="table-responsive">
                 <table class="table table-hover table-bordered align-middle mb-0" id="reportTable" style="font-size: 0.88rem;">
@@ -119,12 +138,77 @@
     </div>
 </div>
 
-<script>
-    const API_URL = "https://script.google.com/macros/s/AKfycbx-UMoVruzOPPLcgt8A1rjhv3EpRPXDSxYxiUv76GetE02sbUrNjpx7fTgLUebZw7Z8iQ/exec";
-    let currentReportData = [];
+<!-- Modal Display-Only Detail Voucher (Pengganti Buka Google Sheet Langsung) -->
+<div class="modal fade" id="voucherDetailModal" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content border-0 shadow">
+            <div class="modal-header bg-dark text-white">
+                <h6 class="modal-title fw-bold">Detail Data Voucher (Display Only)</h6>
+                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body">
+                <div class="alert alert-light border text-center mb-3 py-2">
+                    <small class="text-muted d-block">KODE / NOMOR VOUCHER</small>
+                    <span class="fs-5 fw-bold text-primary font-monospace" id="modalVoucherId">-</span>
+                </div>
+                <table class="table table-sm table-bordered mb-3" style="font-size: 0.9rem;">
+                    <tbody>
+                        <tr>
+                            <th class="bg-light w-40">Nomor Kamar</th>
+                            <td class="fw-bold" id="modalNoKamar">-</td>
+                        </tr>
+                        <tr>
+                            <th class="bg-light">Jumlah Pax</th>
+                            <td id="modalPax">-</td>
+                        </tr>
+                        <tr>
+                            <th class="bg-light">Tanggal Check-in</th>
+                            <td id="modalCheckin">-</td>
+                        </tr>
+                        <tr>
+                            <th class="bg-light">Tanggal Check-out</th>
+                            <td id="modalCheckout">-</td>
+                        </tr>
+                        <tr>
+                            <th class="bg-light">Masa Berlaku Sarapan</th>
+                            <td class="fw-bold text-success" id="modalValidPeriod">-</td>
+                        </tr>
+                        <tr>
+                            <th class="bg-light">Kategori</th>
+                            <td id="modalKategori">-</td>
+                        </tr>
+                        <tr>
+                            <th class="bg-light">Status Sistem</th>
+                            <td id="modalStatus">-</td>
+                        </tr>
+                        <tr>
+                            <th class="bg-light">Total Pemakaian</th>
+                            <td class="fw-bold" id="modalTotalScan">-</td>
+                        </tr>
+                    </tbody>
+                </table>
+                <div>
+                    <label class="form-label fw-bold small text-muted mb-1">Log Riwayat Scan di Restoran:</label>
+                    <div class="p-2 bg-light border rounded small font-monospace" id="modalHistoryScan" style="min-height: 45px;">-</div>
+                </div>
+            </div>
+            <div class="modal-footer bg-light py-2">
+                <span class="text-muted small me-auto">Mode Baca Saja (Read-Only)</span>
+                <button type="button" class="btn btn-secondary btn-sm" data-bs-dismiss="modal">Tutup</button>
+            </div>
+        </div>
+    </div>
+</div>
 
-    // Set default tanggal: Tanggal 1 bulan berjalan s/d Tanggal 30/akhir bulan
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+<script>
+    const API_URL = "https://script.google.com/macros/s/AKfycbzZMS-0vb4LvuQjYFBXyKYoyGlkMJS4h1SDOQzf_hnMLL-_bZqlzbIe6mM3bHeSdbRCZQ/exec";
+    let currentReportData = [];
+    let detailModalInstance = null;
+
     window.onload = function() {
+        detailModalInstance = new bootstrap.Modal(document.getElementById('voucherDetailModal'));
+
         const now = new Date();
         const year = now.getFullYear();
         const month = String(now.getMonth() + 1).padStart(2, '0');
@@ -169,12 +253,39 @@
         renderTable(currentReportData);
     };
 
+    // Hitung total hak sarapan (jatah hari) dalam rentang filter agar % rekonsiliasi akurat untuk multi-night
+    function calculateExpectedEntitlement(item, filterStart, filterEnd) {
+        const cIn = new Date(item.tglCheckin + "T00:00:00");
+        cIn.setDate(cIn.getDate() + 1); // Mulai sarapan H+1
+        const cOut = new Date(item.tglCheckout + "T00:00:00");
+
+        let effectiveStart = cIn;
+        let effectiveEnd = cOut;
+
+        if (filterStart) {
+            const fStart = new Date(filterStart + "T00:00:00");
+            if (fStart > effectiveStart) effectiveStart = fStart;
+        }
+        if (filterEnd) {
+            const fEnd = new Date(filterEnd + "T00:00:00");
+            if (fEnd < effectiveEnd) effectiveEnd = fEnd;
+        }
+
+        if (effectiveEnd < effectiveStart) return 0;
+        const diffDays = Math.round((effectiveEnd - effectiveStart) / (1000 * 3600 * 24)) + 1;
+        return diffDays * parseInt(item.pax || 1);
+    }
+
     function renderTable(data) {
         const tbody = document.getElementById('reportTableBody');
         tbody.innerHTML = "";
 
+        const startDate = document.getElementById('startDate').value;
+        const endDate = document.getElementById('endDate').value;
+
         let totalVoucher = data.length;
         let totalScan = 0;
+        let totalEntitlement = 0;
         let ebPaid = 0;
         let ebComp = 0;
 
@@ -183,6 +294,8 @@
         } else {
             data.forEach((item, index) => {
                 totalScan += parseInt(item.totalScan || 0);
+                totalEntitlement += calculateExpectedEntitlement(item, startDate, endDate);
+
                 if (item.ebType === 'paid') ebPaid++;
                 if (item.ebType === 'compliment') ebComp++;
 
@@ -197,7 +310,7 @@
                 const tr = document.createElement('tr');
                 tr.innerHTML = `
                     <td>${index + 1}</td>
-                    <td class="voucher-code">${item.voucherId}</td>
+                    <td><span class="voucher-link" onclick="showVoucherDetail('${item.voucherId}')" title="Klik untuk melihat detail voucher">${item.voucherId}</span></td>
                     <td class="fw-bold">${item.noKamar}</td>
                     <td>${item.pax}</td>
                     <td>${item.tglCheckin}</td>
@@ -211,10 +324,45 @@
             });
         }
 
+        // Hitung persentase rekonsiliasi
+        let reconPercent = 0;
+        if (totalEntitlement > 0) {
+            reconPercent = ((totalScan / totalEntitlement) * 100).toFixed(1);
+        }
+
         document.getElementById('statTotalVoucher').innerText = totalVoucher;
         document.getElementById('statTotalScan').innerText = totalScan;
+        document.getElementById('statReconPercent').innerText = `${reconPercent}%`;
+        document.getElementById('statReconDetail').innerText = `(${totalScan} / ${totalEntitlement} Jatah)`;
         document.getElementById('statEbPaid').innerText = ebPaid;
         document.getElementById('statEbComp').innerText = ebComp;
+    }
+
+    function showVoucherDetail(voucherId) {
+        const item = currentReportData.find(v => v.voucherId === voucherId);
+        if (!item) return;
+
+        // Hitung tanggal mulai sarapan (H+1)
+        const cIn = new Date(item.tglCheckin + "T00:00:00");
+        cIn.setDate(cIn.getDate() + 1);
+        const startBreakfast = cIn.toISOString().split('T')[0];
+
+        let catLabel = "Regular";
+        if (item.ebType === 'paid') catLabel = "Extra Bed (Paid)";
+        if (item.ebType === 'compliment') catLabel = "Extra Bed (Compliment)";
+
+        document.getElementById('modalVoucherId').innerText = item.voucherId;
+        document.getElementById('modalNoKamar').innerText = item.noKamar;
+        document.getElementById('modalPax').innerText = `${item.pax} Pax`;
+        document.getElementById('modalCheckin').innerText = item.tglCheckin;
+        document.getElementById('modalCheckout').innerText = item.tglCheckout;
+        document.getElementById('modalValidPeriod').innerText = `${startBreakfast} s/d ${item.tglCheckout}`;
+        document.getElementById('modalKategori').innerText = catLabel;
+        document.getElementById('modalStatus').innerText = item.status;
+        document.getElementById('modalTotalScan').innerText = `${item.totalScan}x Scan`;
+        document.getElementById('modalHistoryScan').innerText = item.historyScan ? item.historyScan.split(" | ").join("\n") : "Belum pernah digunakan / belum di-scan.";
+
+        detailModalInstance.show();
     }
 
     function filterTable() {
