@@ -177,55 +177,50 @@
         const container = document.getElementById('voucherCardsContainer');
         container.innerHTML = ""; // Bersihkan kontainer utama
 
+        const totalLembar = vouchersData.length;
+
         vouchersData.forEach((item, index) => {
-            const checkInDate = new Date(item.tglCheckin);
-            checkInDate.setDate(checkInDate.getDate() + 1);
-            const startBreakfastStr = checkInDate.toISOString().split('T')[0];
+            const nomorUrut = index + 1;
+            const qrDivId = "qrCodeBox_" + index;
 
-            const card = document.createElement('div');
-            card.className = "voucher-card text-center p-2 mb-2 border bg-white";
-            card.style.fontSize = "11px";
-
-            let ebBadgeHtml = "";
-            if (item.ebType === 'compliment') {
-                ebBadgeHtml = `<span class="badge bg-success mb-1" style="font-size: 8px;">EB COMPLIMENT</span><br>`;
-            } else if (item.ebType === 'paid') {
-                ebBadgeHtml = `<span class="badge bg-warning text-dark mb-1" style="font-size: 8px;">+1 EXTRA BED</span><br>`;
+            // Tentukan label kategori jika Extra Bed
+            let labelKategori = "";
+            if (item.ebType === "paid") {
+                labelKategori = `<div style="font-size: 10px; font-weight: bold; margin-top: 2px;">[EXTRA BED - PAID]</div>`;
+            } else if (item.ebType === "compliment") {
+                labelKategori = `<div style="font-size: 10px; font-weight: bold; margin-top: 2px;">[EXTRA BED - COMPLIMENT]</div>`;
             }
 
-            let reprintBadgeHtml = isReprint ? `<span class="badge bg-secondary mb-1" style="font-size: 8px;">DUPLIKAT</span><br>` : "";
+            // Hitung tanggal mulai sarapan (H+1 dari tglCheckin)
+            const cIn = new Date(item.tglCheckin + "T00:00:00");
+            cIn.setDate(cIn.getDate() + 1);
+            const startBreakfast = cIn.toISOString().split('T')[0];
 
-            const qrDivId = `qrcode_${index}_${Date.now()}`; // Pastikan ID unik per elemen
-
-            card.innerHTML = `
-                <div class="fw-bold text-uppercase" style="font-size: 11px; line-height: 1.1; margin-bottom: 1px;">ASTON TANJUNGPINANG</div>
-                <small class="text-muted d-block" style="font-size: 7.5px; font-weight: 600; line-height: 1; margin-bottom: 3px;">HOTEL & CONFERENCE CENTER</small>
-                
-                <div class="fw-bold" style="font-size: 10px; padding: 1px 0; margin-bottom: 2px; border-top: 1px dashed #ccc; border-bottom: 1px dashed #ccc;">
-                    BREAKFAST VOUCHER (${index + 1}/${vouchersData.length})
+            // Buat kartu struk untuk masing-masing QR
+            const cardHTML = `
+                <div class="voucher-sheet text-center bg-white p-2 mb-3" style="border: 1px dashed #999; page-break-after: always;">
+                    <div style="font-weight: bold; font-size: 13px; letter-spacing: 0.5px;">ASTON TANJUNGPINANG</div>
+                    <div style="font-size: 9px; color: #555; border-bottom: 1px solid #000; padding-bottom: 3px; margin-bottom: 4px;">HOTEL & CONFERENCE CENTER</div>
+                    <div style="font-weight: bold; font-size: 11px;">BREAKFAST VOUCHER (${nomorUrut}/${totalLembar})</div>
+                    ${labelKategori}
+                    <div class="d-flex justify-content-between px-2 mt-1" style="font-size: 11px;">
+                        <span>Kamar: <strong>${item.noKamar}</strong></span>
+                        <span>Pax: <strong>1 Pax</strong></span>
+                    </div>
+                    <div style="font-size: 10px; margin-bottom: 6px;">
+                        Berlaku: <strong>${startBreakfast} s/d ${item.tglCheckout}</strong>
+                    </div>
+                    <div id="${qrDivId}" class="d-flex justify-content-center my-1"></div>
+                    <div style="font-size: 9px; color: #444; margin-top: 4px;">
+                        Tunjukkan ke staf resto (Voucher ${nomorUrut})
+                    </div>
                 </div>
-                ${reprintBadgeHtml}
-                ${ebBadgeHtml}
-                
-                <div class="d-flex justify-content-between px-1" style="font-size: 10px; line-height: 1.2;">
-                    <span>Kamar: <strong>${item.noKamar}</strong></span>
-                    <span>Pax: <strong>1 Pax</strong></span>
-                </div>
-                <div style="font-size: 9.5px; line-height: 1.2; margin-bottom: 2px;">
-                    Berlaku: <strong>${startBreakfastStr} s/d ${item.tglCheckout}</strong>
-                </div>
-                
-                <div id="${qrDivId}" class="qrcode-box d-flex justify-content-center my-1"></div>
-                <small class="text-muted d-block" style="font-size: 8px; line-height: 1;">Tunjukkan ke staf resto (Voucher ${index + 1})</small>
             `;
 
-            container.appendChild(card);
+            container.insertAdjacentHTML('beforeend', cardHTML);
 
-            // Kosongkan target elemen sebelum merender QRCode baru
-            const qrElement = document.getElementById(qrDivId);
-            qrElement.innerHTML = "";
-
-            new QRCode(qrElement, {
+            // Generate QR Code ukuran standar awal (120x120) untuk setiap lembar
+            new QRCode(document.getElementById(qrDivId), {
                 text: item.voucherId,
                 width: 120,
                 height: 120,
@@ -233,7 +228,7 @@
             });
         });
 
-        document.getElementById('printableVoucherArea').style.display = "block";
+        document.getElementById('printableVoucherArea').style.display = 'block';
     }
 
     function callGoogleScript(params, callbackName) {
