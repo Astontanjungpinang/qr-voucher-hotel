@@ -3,42 +3,53 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Scan Voucher Restoran - Aston Tanjungpinang</title>
+    <title>Scan & Reconcile Restoran - Aston Tanjungpinang</title>
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
     <script src="https://unpkg.com/html5-qrcode" type="text/javascript"></script>
     <style>
         body {
-            background-color: #18181b;
+            background-color: #121417;
             color: #ffffff;
-            font-family: sans-serif;
-            padding: 15px;
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+            padding: 14px;
         }
-        .scanner-wrapper {
-            max-width: 450px;
+        .app-wrapper {
+            max-width: 720px;
             margin: 0 auto;
         }
+        /* Navigasi Tab Besar Ramah Mobile */
+        .nav-pills .nav-link {
+            background-color: #1e2229;
+            color: #adb5bd;
+            border: 1px solid #2d323b;
+            padding: 12px 10px;
+            font-size: 0.95rem;
+            border-radius: 10px;
+        }
+        .nav-pills .nav-link.active {
+            background-color: #0d6efd;
+            color: #ffffff;
+            border-color: #0d6efd;
+        }
+        /* Area Kamera Scanner */
         #reader {
             width: 100%;
             border-radius: 12px;
             overflow: hidden;
-            border: 2px solid #3f3f46;
-            background-color: #000;
+            background: #000;
+            border: 2px solid #2d323b;
         }
-        .processing-card {
-            background-color: #1e3a8a;
-            border: 2px solid #3b82f6;
-            border-radius: 12px;
-            padding: 30px 20px;
+        /* Kartu Hasil Scan (Hijau / Merah / Kuning Loading) */
+        .scan-result-box {
+            border-radius: 14px;
+            padding: 24px 18px;
             text-align: center;
-            margin-top: 15px;
+            margin-top: 14px;
             display: none;
         }
-        .result-card {
-            border-radius: 12px;
-            padding: 20px;
-            text-align: center;
-            margin-top: 15px;
-            display: none;
+        .result-loading {
+            background-color: #f59e0b;
+            color: #000000;
         }
         .result-valid {
             background-color: #16a34a;
@@ -48,205 +59,539 @@
             background-color: #dc2626;
             color: #ffffff;
         }
+        /* Panel Reconcile Harian (Mode Terang & Bersih untuk Audit) */
+        .reconcile-panel {
+            background-color: #f8fafc;
+            color: #1e293b;
+            border-radius: 14px;
+            padding: 16px;
+        }
+        .mini-kpi {
+            background: #ffffff;
+            border: 1px solid #e2e8f0;
+            border-radius: 10px;
+            padding: 10px 12px;
+            height: 100%;
+            border-top: 3px solid #94a3b8;
+        }
+        .mini-kpi-label {
+            font-size: 0.72rem;
+            font-weight: 700;
+            color: #64748b;
+            text-transform: uppercase;
+        }
+        .mini-kpi-val {
+            font-size: 1.35rem;
+            font-weight: 800;
+            line-height: 1.2;
+            font-variant-numeric: tabular-nums;
+        }
+        .table-reconcile th {
+            background-color: #1e293b;
+            color: #ffffff;
+            font-size: 0.78rem;
+            white-space: nowrap;
+        }
+        .table-reconcile td {
+            font-size: 0.82rem;
+            vertical-align: middle;
+        }
+
+        /* Pengaturan Khusus Saat Cetak Rekap Shift Resto */
+        @media print {
+            body {
+                background-color: #ffffff !important;
+                color: #000000 !important;
+                padding: 0 !important;
+            }
+            .no-print {
+                display: none !important;
+            }
+            .reconcile-panel {
+                background-color: #ffffff !important;
+                padding: 0 !important;
+            }
+            .print-header {
+                display: block !important;
+            }
+            .table-responsive {
+                max-height: none !important;
+                overflow: visible !important;
+            }
+        }
     </style>
 </head>
 <body>
 
-<div class="scanner-wrapper">
-    <!-- Header -->
-    <div class="d-flex align-items-center justify-content-between mb-3">
-        <a href="index.html" class="btn btn-sm btn-outline-light">← Kembali</a>
-        <h5 class="fw-bold mb-0">Scan Voucher Restoran</h5>
-        <div style="width: 65px;"></div>
+<script>
+    if (sessionStorage.getItem('auth_RESTO') !== 'true') {
+        alert('Silakan login terlebih dahulu!');
+        window.location.href = 'index.html';
+    }
+</script>
+
+<div class="app-wrapper">
+    <!-- Header Atas -->
+    <div class="d-flex align-items-center justify-content-between mb-3 no-print">
+        <a href="index.html" class="btn btn-outline-light btn-sm px-3 py-2">← Kembali</a>
+        <h5 class="fw-bold mb-0 text-center">Restoran — Aston Tanjungpinang</h5>
+        <div style="width: 78px;"></div>
     </div>
 
-    <!-- Area Kamera Scanner -->
-    <div id="cameraSection" class="card bg-dark border-secondary p-2 shadow">
-        <div id="reader"></div>
-        <div class="text-center text-secondary small mt-2" id="cameraStatus">
-            Arahkan kamera ke QR Code Voucher Tamu...
+    <!-- Navigasi 2 Tab Utama -->
+    <ul class="nav nav-pills nav-fill gap-2 mb-3 no-print" id="restoTabs" role="tablist">
+        <li class="nav-item" role="presentation">
+            <button class="nav-link active fw-bold" id="tab-scan-btn" data-bs-toggle="pill" data-bs-target="#pane-scan" type="button" role="tab" onclick="onSwitchToScan()">
+                Scan Voucher
+            </button>
+        </li>
+        <li class="nav-item" role="presentation">
+            <button class="nav-link fw-bold" id="tab-recon-btn" data-bs-toggle="pill" data-bs-target="#pane-recon" type="button" role="tab" onclick="onSwitchToReconcile()">
+                Reconcile Harian
+            </button>
+        </li>
+    </ul>
+
+    <div class="tab-content">
+        <!-- =============================================================== -->
+        <!-- TAB 1: PEMINDAI QR VOUCHER                                      -->
+        <!-- =============================================================== -->
+        <div class="tab-pane fade show active no-print" id="pane-scan" role="tabpanel">
+            <div id="reader"></div>
+
+            <div class="text-center text-secondary small mt-2" id="cameraHint">
+                Arahkan kamera ke QR Code pada voucher sarapan tamu
+            </div>
+
+            <!-- Kotak Hasil Scan -->
+            <div id="scanResultBox" class="scan-result-box shadow">
+                <h2 class="fw-bold mb-2" id="resultTitle">MEMPROSES...</h2>
+                <div id="resultMessage" class="fs-5 mb-3">Memeriksa validitas voucher...</div>
+                <div id="resultDetail" class="small mb-3"></div>
+                <button type="button" id="btnScanAgain" onclick="resumeScanner()" class="btn btn-light fw-bold px-4 py-2 w-100" style="display: none;">
+                    ↻ Scan Voucher Lain
+                </button>
+            </div>
         </div>
-    </div>
 
-    <!-- Tampilan Sedang Memproses QR (Muncul langsung saat QR terbaca) -->
-    <div id="processingBox" class="processing-card shadow">
-        <div class="spinner-border text-light mb-3" style="width: 3.5rem; height: 3.5rem;" role="status"></div>
-        <h4 class="fw-bold mb-1">Sedang Memproses QR...</h4>
-        <p class="text-info mb-0 small" id="processingCodeText">Memvalidasi data ke server...</p>
-    </div>
+        <!-- =============================================================== -->
+        <!-- TAB 2: REKONSILIASI HARIAN (SINKRON DENGAN ACCOUNTING)          -->
+        <!-- =============================================================== -->
+        <div class="tab-pane fade" id="pane-recon" role="tabpanel">
+            <div class="reconcile-panel shadow-sm">
+                <!-- Header Khusus Print -->
+                <div class="print-header text-center mb-3 pb-2 border-bottom border-dark" style="display: none;">
+                    <h5 class="fw-bold mb-0">LAPORAN REKONSILIASI HARIAN BREAKFAST - RESTORAN</h5>
+                    <div class="small">Aston Tanjungpinang Hotel & Conference Center</div>
+                    <div class="small fw-bold mt-1" id="printDateLabel"></div>
+                </div>
 
-    <!-- Kartu Hasil Validasi (Hijau = Valid, Merah = Tidak Valid) -->
-    <div id="resultBox" class="result-card shadow">
-        <h3 class="fw-bold mb-2" id="resultTitle">-</h3>
-        <p class="mb-3" id="resultMessage" style="font-size: 1.05rem;">-</p>
-        <div id="resultDetails" class="bg-black bg-opacity-25 rounded p-2 mb-3 small text-start" style="display: none;"></div>
-        <button onclick="resetScanner()" class="btn btn-light w-100 fw-bold py-2">
-            ↻ Scan Voucher Lain
-        </button>
+                <!-- Filter Tanggal & Tombol Cetak -->
+                <div class="row g-2 align-items-end mb-3 no-print">
+                    <div class="col-5">
+                        <label class="form-label small fw-bold text-secondary mb-1">Tanggal Sarapan</label>
+                        <input type="date" id="reconDateInput" class="form-control form-control-sm">
+                    </div>
+                    <div class="col-4">
+                        <button type="button" id="btnLoadRecon" onclick="loadDailyReconcile()" class="btn btn-primary btn-sm w-100 fw-bold">
+                            Tampilkan
+                        </button>
+                    </div>
+                    <div class="col-3">
+                        <button type="button" onclick="printReconcileReport()" class="btn btn-dark btn-sm w-100 fw-bold">
+                            Cetak
+                        </button>
+                    </div>
+                </div>
+
+                <!-- 6 Kartu KPI (Rumus Identik dengan finance.html) -->
+                <div class="row g-2 mb-3">
+                    <div class="col-4">
+                        <div class="mini-kpi" style="border-top-color: #64748b;">
+                            <div class="mini-kpi-label">Total Kamar</div>
+                            <div class="mini-kpi-val text-secondary" id="rcKamar">0</div>
+                        </div>
+                    </div>
+                    <div class="col-4">
+                        <div class="mini-kpi" style="border-top-color: #2563eb;">
+                            <div class="mini-kpi-label">Voucher Terbit</div>
+                            <div class="mini-kpi-val text-primary" id="rcTerbit">0</div>
+                        </div>
+                    </div>
+                    <div class="col-4">
+                        <div class="mini-kpi" style="border-top-color: #16a34a;">
+                            <div class="mini-kpi-label">Sudah Scan</div>
+                            <div class="mini-kpi-val text-success" id="rcSudahScan">0</div>
+                        </div>
+                    </div>
+                    <div class="col-4">
+                        <div class="mini-kpi" style="border-top-color: #0f172a;">
+                            <div class="mini-kpi-label">Rekonsiliasi</div>
+                            <div class="mini-kpi-val text-dark" id="rcPersen">0.0%</div>
+                        </div>
+                    </div>
+                    <div class="col-4">
+                        <div class="mini-kpi" style="border-top-color: #f59e0b;">
+                            <div class="mini-kpi-label">EB (Paid)</div>
+                            <div class="mini-kpi-val text-warning" id="rcEbPaid">0</div>
+                        </div>
+                    </div>
+                    <div class="col-4">
+                        <div class="mini-kpi" style="border-top-color: #06b6d4;">
+                            <div class="mini-kpi-label">Compliment</div>
+                            <div class="mini-kpi-val text-info" id="rcCompliment">0</div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Filter Cepat Status Scan -->
+                <div class="d-flex flex-wrap align-items-center justify-content-between gap-2 mb-2 no-print">
+                    <span class="small fw-bold text-secondary">Filter Status Hari Ini:</span>
+                    <div class="btn-group btn-group-sm" role="group">
+                        <input type="radio" class="btn-check" name="statusFilter" id="fltAll" value="ALL" checked onchange="applyStatusFilter()">
+                        <label class="btn btn-outline-secondary" for="fltAll">Semua (<span id="cntAll">0</span>)</label>
+
+                        <input type="radio" class="btn-check" name="statusFilter" id="fltScanned" value="SCANNED" onchange="applyStatusFilter()">
+                        <label class="btn btn-outline-success" for="fltScanned">Sudah Scan (<span id="cntScanned">0</span>)</label>
+
+                        <input type="radio" class="btn-check" name="statusFilter" id="fltUnscanned" value="UNSCANNED" onchange="applyStatusFilter()">
+                        <label class="btn btn-outline-danger" for="fltUnscanned">Belum Scan (<span id="cntUnscanned">0</span>)</label>
+                    </div>
+                </div>
+
+                <!-- Tabel Log Rekonsiliasi Harian -->
+                <div class="table-responsive border rounded bg-white" style="max-height: 430px;">
+                    <table class="table table-sm table-striped table-hover table-reconcile mb-0">
+                        <thead class="sticky-top">
+                            <tr>
+                                <th>No</th>
+                                <th>Kamar</th>
+                                <th>ID Voucher</th>
+                                <th>Kategori</th>
+                                <th>Status</th>
+                                <th>Scan</th>
+                                <th>Waktu Scan</th>
+                            </tr>
+                        </thead>
+                        <tbody id="reconTableBody">
+                            <tr>
+                                <td colspan="7" class="text-center text-muted py-4">Pilih tanggal atau klik Tampilkan.</td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
     </div>
 </div>
 
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
 <script>
-    const API_URL = "https://script.google.com/macros/s/AKfycbw37un8UDuT-Ztg2bW4X41az1-h8gOPalnB7YeLqzn-7InC5G5y71wkzkRasjUG308vyQ/exec";
+    const API_URL = "https://script.google.com/macros/s/AKfycbySL64Zu_XOGBgFl-4wfAcOgdTZVIYKhLvXwD6SR9Pq2D46MTEc2Wsz1HixqWIr66_g6A/exec";
+
     let html5QrCode = null;
-    let isProcessing = false;
+    let isScanningLocked = false;
+    let dailyRowsCache = [];
 
-    window.onload = function() {
-        startCamera();
-    };
-
-    // Efek bunyi bip singkat saat QR terbaca
-    function playBeep() {
-        try {
-            const ctx = new (window.AudioContext || window.webkitAudioContext)();
-            const osc = ctx.createOscillator();
-            osc.type = "sine";
-            osc.frequency.setValueAtTime(880, ctx.currentTime);
-            osc.connect(ctx.destination);
-            osc.start();
-            osc.stop(ctx.currentTime + 0.12);
-        } catch (e) {}
-    }
-
-    function startCamera() {
-        isProcessing = false;
-        document.getElementById('resultBox').style.display = 'none';
-        document.getElementById('processingBox').style.display = 'none';
-        document.getElementById('cameraSection').style.display = 'block';
-        document.getElementById('cameraStatus').innerText = "Membuka kamera...";
-
-        if (!html5QrCode) {
-            html5QrCode = new Html5Qrcode("reader");
-        }
-
-        html5QrCode.start(
-            { facingMode: "environment" },
-            {
-                fps: 15,
-                aspectRatio: 1.0
-            },
-            onScanSuccess,
-            () => {}
-        ).then(() => {
-            document.getElementById('cameraStatus').innerText = "Arahkan kamera ke QR Code Voucher Tamu...";
-        }).catch((err) => {
-            document.getElementById('cameraStatus').innerHTML = 
-                `<span class="text-danger">Gagal mengakses kamera: ${err}<br>Pastikan izin kamera di browser sudah diizinkan.</span>`;
-        });
-    }
-
-    function onScanSuccess(decodedText) {
-        if (isProcessing) return;
-
-        let cleanVoucherId = (decodedText || "").toString().trim();
-
-        // Ekstrak ID jika QR berisi format JSON
-        if (cleanVoucherId.startsWith("{")) {
-            try {
-                const parsed = JSON.parse(cleanVoucherId);
-                cleanVoucherId = (parsed.voucherId || parsed.id || "").toString().trim();
-            } catch (e) {}
-        }
-
-        if (!cleanVoucherId) return;
-
-        isProcessing = true;
-        playBeep();
-
-        // Langsung sembunyikan kamera & tampilkan layar "Sedang Memproses QR..."
-        document.getElementById('cameraSection').style.display = 'none';
-        document.getElementById('processingBox').style.display = 'block';
-        document.getElementById('processingCodeText').innerText = "Kode: " + cleanVoucherId;
-
-        if (html5QrCode && html5QrCode.isScanning) {
-            html5QrCode.stop().catch(() => {});
-        }
-
-        validateVoucherWithServer(cleanVoucherId);
-    }
-
-    function validateVoucherWithServer(voucherId) {
+    function getTodayLocalStr() {
         const now = new Date();
         const yyyy = now.getFullYear();
         const mm = String(now.getMonth() + 1).padStart(2, '0');
         const dd = String(now.getDate()).padStart(2, '0');
-        const todayStr = `${yyyy}-${mm}-${dd}`;
+        return `${yyyy}-${mm}-${dd}`;
+    }
 
-        const callbackName = "onScanValidated_" + new Date().getTime();
-        
-        // Timeout 12 detik jika jaringan lambat
-        const timeoutTimer = setTimeout(() => {
-            if (window[callbackName]) {
-                delete window[callbackName];
-                showValidationResult({
-                    result: "error",
-                    message: "Waktu koneksi habis (Timeout). Periksa sinyal internet lalu coba scan ulang."
-                });
+    window.onload = function() {
+        document.getElementById('reconDateInput').value = getTodayLocalStr();
+        startCameraScanner();
+    };
+
+    // =========================================================================
+    // LOGIKA KAMERA & VALIDASI SCAN VOUCHER
+    // =========================================================================
+    function startCameraScanner() {
+        if (!html5QrCode) {
+            html5QrCode = new Html5Qrcode("reader");
+        }
+
+        const config = {
+            fps: 15,
+            qrbox: { width: 240, height: 240 },
+            aspectRatio: 1.0,
+            experimentalFeatures: {
+                useBarCodeDetectorIfSupported: true
             }
-        }, 12000);
+        };
 
-        window[callbackName] = function(res) {
-            clearTimeout(timeoutTimer);
-            delete window[callbackName];
-            showValidationResult(res);
+        html5QrCode.start(
+            { facingMode: "environment" },
+            config,
+            onScanSuccess,
+            () => {}
+        ).catch(err => {
+            document.getElementById('cameraHint').innerHTML =
+                `<span class="text-warning">Gagal mengakses kamera belakang (${err}). Pastikan izin kamera diaktifkan.</span>`;
+        });
+    }
+
+    function onScanSuccess(decodedText) {
+        if (isScanningLocked) return;
+        const cleanCode = decodedText ? decodedText.toString().trim() : "";
+        if (!cleanCode) return;
+
+        isScanningLocked = true;
+
+        if (navigator.vibrate) {
+            navigator.vibrate(100);
+        }
+
+        // Hentikan sementara preview kamera & tampilkan indikator loading
+        if (html5QrCode && html5QrCode.isScanning) {
+            html5QrCode.pause(true);
+        }
+
+        const box = document.getElementById('scanResultBox');
+        const title = document.getElementById('resultTitle');
+        const msg = document.getElementById('resultMessage');
+        const detail = document.getElementById('resultDetail');
+        const btnAgain = document.getElementById('btnScanAgain');
+
+        box.className = "scan-result-box result-loading shadow";
+        box.style.display = "block";
+        title.innerText = "MEMVALIDASI...";
+        msg.innerText = "Mengecek data ke server...";
+        detail.innerText = cleanCode;
+        btnAgain.style.display = "none";
+
+        const todayStr = getTodayLocalStr();
+        const cbName = "cbScan_" + Date.now();
+
+        window[cbName] = function(res) {
+            delete window[cbName];
+            btnAgain.style.display = "block";
+
+            if (res && res.result === "success") {
+                const d = res.data || {};
+                let katText = "Regular";
+                if (d.ebType === "paid") katText = "EXTRA BED (PAID)";
+                if (d.ebType === "compliment" || d.ebType === "comp_pax" || d.ebType === "compliment_all") {
+                    katText = "COMPLIMENT";
+                }
+
+                box.className = "scan-result-box result-valid shadow";
+                title.innerText = "VALID — SILAKAN MASUK";
+                msg.innerHTML = `Kamar <strong>${d.noKamar || '-'}</strong> (${d.pax || 1} Pax)`;
+                detail.innerHTML = `Kategori: <strong>${katText}</strong> • Waktu: ${d.scanTime || ''}`;
+            } else {
+                box.className = "scan-result-box result-invalid shadow";
+                title.innerText = "TIDAK VALID!";
+                msg.innerText = res ? res.message : "Voucher tidak valid atau gagal terhubung.";
+                detail.innerText = `Kode: ${cleanCode}`;
+            }
         };
 
         const script = document.createElement('script');
-        script.src = `${API_URL}?action=scan&voucherId=${encodeURIComponent(voucherId)}&today=${todayStr}&callback=${callbackName}`;
+        script.src = `${API_URL}?action=scan&voucherId=${encodeURIComponent(cleanCode)}&today=${encodeURIComponent(todayStr)}&callback=${cbName}`;
         script.onerror = function() {
-            clearTimeout(timeoutTimer);
-            delete window[callbackName];
-            showValidationResult({
-                result: "error",
-                message: "Gagal terhubung ke server Apps Script!"
-            });
+            delete window[cbName];
+            btnAgain.style.display = "block";
+            box.className = "scan-result-box result-invalid shadow";
+            title.innerText = "GANGGUAN JARINGAN!";
+            msg.innerText = "Tidak dapat terhubung ke server. Periksa koneksi internet.";
+            detail.innerText = "";
         };
         document.body.appendChild(script);
-        script.onload = () => {
-            if (script.parentNode) script.parentNode.removeChild(script);
-        };
+        script.onload = () => script.remove();
     }
 
-    function showValidationResult(res) {
-        // Sembunyikan layar "Sedang Memproses QR..."
-        document.getElementById('processingBox').style.display = 'none';
-        document.getElementById('cameraSection').style.display = 'none';
-
-        const resultBox = document.getElementById('resultBox');
-        const resultTitle = document.getElementById('resultTitle');
-        const resultMessage = document.getElementById('resultMessage');
-        const resultDetails = document.getElementById('resultDetails');
-
-        resultBox.style.display = 'block';
-        resultBox.classList.remove('result-valid', 'result-invalid');
-
-        if (res && res.result === 'success') {
-            resultBox.classList.add('result-valid');
-            resultTitle.innerText = "VALID!";
-            resultMessage.innerText = res.message || "Voucher Berhasil Digunakan";
-
-            const d = res.data || res;
-            let katLabel = "Regular";
-            if (d.ebType === "paid") katLabel = "Extra Bed (Paid)";
-            if (d.ebType === "compliment") katLabel = "Extra Bed (Compliment)";
-
-            resultDetails.style.display = 'block';
-            resultDetails.innerHTML = `
-                <div><strong>Kode QR:</strong> ${d.voucherId || '-'}</div>
-                <div><strong>Kamar:</strong> ${d.noKamar || '-'} (${d.pax || 1} Pax)</div>
-                <div><strong>Kategori:</strong> ${katLabel}</div>
-                <div><strong>Waktu Scan:</strong> ${d.scanTime || '-'}</div>
-            `;
-        } else {
-            resultBox.classList.add('result-invalid');
-            resultTitle.innerText = "TIDAK VALID!";
-            resultMessage.innerText = (res && res.message) ? res.message : "Voucher tidak dapat digunakan.";
-            resultDetails.style.display = 'none';
+    function resumeScanner() {
+        document.getElementById('scanResultBox').style.display = "none";
+        isScanningLocked = false;
+        if (html5QrCode) {
+            try {
+                html5QrCode.resume();
+            } catch (e) {
+                startCameraScanner();
+            }
         }
     }
 
-    function resetScanner() {
-        startCamera();
+    function onSwitchToScan() {
+        if (!isScanningLocked && html5QrCode) {
+            try {
+                html5QrCode.resume();
+            } catch (e) {}
+        }
+    }
+
+    function onSwitchToReconcile() {
+        if (html5QrCode && html5QrCode.isScanning) {
+            try {
+                html5QrCode.pause(true);
+            } catch (e) {}
+        }
+        loadDailyReconcile();
+    }
+
+    // =========================================================================
+    // LOGIKA RECONCILE HARIAN (100% SAMA DENGAN REPORT ACCOUNTING)
+    // =========================================================================
+    function loadDailyReconcile() {
+        const targetDate = document.getElementById('reconDateInput').value;
+        if (!targetDate) {
+            alert("Pilih tanggal sarapan terlebih dahulu!");
+            return;
+        }
+
+        const btn = document.getElementById('btnLoadRecon');
+        btn.disabled = true;
+        btn.innerText = "Memuat...";
+
+        const tbody = document.getElementById('reconTableBody');
+        tbody.innerHTML = `<tr><td colspan="7" class="text-center text-muted py-4">Mengambil data rekonsiliasi...</td></tr>`;
+
+        const cbName = "cbRestoRecon_" + Date.now();
+        window[cbName] = function(res) {
+            delete window[cbName];
+            btn.disabled = false;
+            btn.innerText = "Tampilkan";
+
+            if (res && res.result === "success") {
+                const rawRows = res.data || [];
+                // Pada tanggal sarapan targetDate, voucher yang berhak sarapan adalah yang Check-in < targetDate <= Check-out
+                dailyRowsCache = rawRows.filter(r => r.tglCheckin < targetDate && targetDate <= r.tglCheckout);
+                calculateAndRenderReconcile(dailyRowsCache);
+            } else {
+                tbody.innerHTML = `<tr><td colspan="7" class="text-center text-danger py-4">${res ? res.message : "Gagal memuat data."}</td></tr>`;
+            }
+        };
+
+        const script = document.createElement('script');
+        script.src = `${API_URL}?action=report&startDate=${encodeURIComponent(targetDate)}&endDate=${encodeURIComponent(targetDate)}&callback=${cbName}`;
+        script.onerror = function() {
+            delete window[cbName];
+            btn.disabled = false;
+            btn.innerText = "Tampilkan";
+            tbody.innerHTML = `<tr><td colspan="7" class="text-center text-danger py-4">Gagal terhubung ke server!</td></tr>`;
+        };
+        document.body.appendChild(script);
+        script.onload = () => script.remove();
+    }
+
+    function calculateAndRenderReconcile(rows) {
+        const uniqueRooms = new Set();
+        let totalTerbit = 0;
+        let totalSudahScan = 0;
+        let totalPotensi = 0;
+        let totalEbPaid = 0;
+        let totalCompliment = 0;
+
+        let countAllValid = 0;
+        let countScanned = 0;
+        let countUnscanned = 0;
+
+        rows.forEach(row => {
+            const isVoid = (row.status === "VOID");
+            if (isVoid) return;
+
+            countAllValid++;
+            if (row.noKamar) uniqueRooms.add(row.noKamar);
+
+            const paxNum = parseInt(row.pax || "1", 10);
+            const scanNum = parseInt(row.totalScan || "0", 10);
+
+            totalTerbit++;
+            totalPotensi += paxNum;
+
+            if (scanNum > 0) {
+                totalSudahScan += scanNum;
+                countScanned++;
+            } else {
+                countUnscanned++;
+            }
+
+            if (row.ebType === "paid") {
+                totalEbPaid++;
+            } else if (row.ebType === "compliment" || row.ebType === "comp_pax" || row.ebType === "compliment_all") {
+                totalCompliment++;
+            }
+        });
+
+        document.getElementById('rcKamar').innerText = uniqueRooms.size;
+        document.getElementById('rcTerbit').innerText = totalTerbit;
+        document.getElementById('rcSudahScan').innerText = totalSudahScan;
+        document.getElementById('rcEbPaid').innerText = totalEbPaid;
+        document.getElementById('rcCompliment').innerText = totalCompliment;
+
+        const persen = totalPotensi > 0 ? ((totalSudahScan / totalPotensi) * 100).toFixed(1) : "0.0";
+        document.getElementById('rcPersen').innerText = `${persen}%`;
+
+        document.getElementById('cntAll').innerText = countAllValid;
+        document.getElementById('cntScanned').innerText = countScanned;
+        document.getElementById('cntUnscanned').innerText = countUnscanned;
+
+        applyStatusFilter();
+    }
+
+    function applyStatusFilter() {
+        const filterVal = document.querySelector('input[name="statusFilter"]:checked').value;
+        const tbody = document.getElementById('reconTableBody');
+
+        const filtered = dailyRowsCache.filter(row => {
+            const scanNum = parseInt(row.totalScan || "0", 10);
+            if (filterVal === "SCANNED") return row.status !== "VOID" && scanNum > 0;
+            if (filterVal === "UNSCANNED") return row.status !== "VOID" && scanNum === 0;
+            return true; // ALL menampilkan semua termasuk indikator VOID agar audit transparan
+        });
+
+        if (filtered.length === 0) {
+            tbody.innerHTML = `<tr><td colspan="7" class="text-center text-muted py-4">Tidak ada data voucher untuk filter ini.</td></tr>`;
+            return;
+        }
+
+        let html = "";
+        filtered.forEach((row, idx) => {
+            const isVoid = (row.status === "VOID");
+            const scanNum = parseInt(row.totalScan || "0", 10);
+
+            let katBadge = `<span class="badge bg-secondary">Regular</span>`;
+            if (row.ebType === "paid") {
+                katBadge = `<span class="badge bg-warning text-dark">EB Paid</span>`;
+            } else if (row.ebType === "compliment" || row.ebType === "comp_pax" || row.ebType === "compliment_all") {
+                katBadge = `<span class="badge bg-info text-dark">Compliment</span>`;
+            }
+
+            let statusBadge = "";
+            if (isVoid) {
+                statusBadge = `<span class="badge bg-danger">VOID</span>`;
+            } else if (scanNum > 0) {
+                statusBadge = `<span class="badge bg-success">SUDAH SCAN</span>`;
+            } else {
+                statusBadge = `<span class="badge bg-outline-secondary border border-secondary text-secondary">BELUM SCAN</span>`;
+            }
+
+            const rowClass = isVoid ? "table-danger" : "";
+
+            html += `
+                <tr class="${rowClass}">
+                    <td>${idx + 1}</td>
+                    <td class="fw-bold">${row.noKamar}</td>
+                    <td class="text-muted small">${row.voucherId}</td>
+                    <td>${katBadge}</td>
+                    <td>${statusBadge}</td>
+                    <td class="fw-bold">${scanNum}x</td>
+                    <td class="small text-muted">${row.historyScan || '-'}</td>
+                </tr>
+            `;
+        });
+
+        tbody.innerHTML = html;
+    }
+
+    function printReconcileReport() {
+        const targetDate = document.getElementById('reconDateInput').value;
+        document.getElementById('printDateLabel').innerText = "Tanggal Sarapan: " + targetDate;
+        window.print();
     }
 </script>
 </body>
