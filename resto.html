@@ -3,160 +3,211 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Resto - Scan Voucher Breakfast</title>
+    <title>Scan Voucher Restoran - Aston Tanjungpinang</title>
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
-    <script src="https://unpkg.com/html5-qrcode"></script>
+    <script src="https://unpkg.com/html5-qrcode" type="text/javascript"></script>
     <style>
-        body { background-color: #121212; color: #ffffff; padding: 20px; }
-        .card-resto { background-color: #1e1e1e; border: 1px solid #333; border-radius: 12px; }
-        #reader { width: 100%; border-radius: 8px; overflow: hidden; }
-        #reader video { border-radius: 8px; }
+        body {
+            background-color: #18181b;
+            color: #ffffff;
+            font-family: sans-serif;
+            padding: 15px;
+        }
+        .scanner-wrapper {
+            max-width: 450px;
+            margin: 0 auto;
+        }
+        #reader {
+            width: 100%;
+            border-radius: 12px;
+            overflow: hidden;
+            border: 2px solid #3f3f46;
+            background-color: #000;
+        }
+        .result-card {
+            border-radius: 12px;
+            padding: 20px;
+            text-align: center;
+            margin-top: 15px;
+            display: none;
+        }
+        .result-valid {
+            background-color: #16a34a;
+            color: #ffffff;
+        }
+        .result-invalid {
+            background-color: #dc2626;
+            color: #ffffff;
+        }
     </style>
 </head>
 <body>
 
-<script>
-    if (sessionStorage.getItem('auth_RESTO') !== 'true') {
-        alert('Silakan login terlebih dahulu!');
-        window.location.href = 'index.html';
-    }
-</script>
-
-<div class="container" style="max-width: 500px;">
-    <div class="d-flex justify-content-between align-items-center mb-3">
+<div class="scanner-wrapper">
+    <!-- Header -->
+    <div class="d-flex align-items-center justify-content-between mb-3">
         <a href="index.html" class="btn btn-sm btn-outline-light">← Kembali</a>
-        <h5 class="mb-0 fw-bold">Scan Voucher Restoran</h5>
+        <h5 class="fw-bold mb-0">Scan Voucher Restoran</h5>
+        <div style="width: 65px;"></div>
     </div>
 
-    <!-- Container Scanner QR -->
-    <div class="card card-resto p-3 shadow-sm mb-3 text-center">
+    <!-- Area Kamera Scanner -->
+    <div id="cameraSection" class="card bg-dark border-secondary p-2 shadow">
         <div id="reader"></div>
-        <button id="btnRescan" class="btn btn-outline-warning w-100 mt-2" style="display:none;" onclick="startScanner()">
+        <div class="text-center text-secondary small mt-2" id="cameraStatus">
+            Arahkan kamera ke QR Code Voucher Tamu...
+        </div>
+    </div>
+
+    <!-- Tombol Scan Ulang (Muncul setelah scan selesai) -->
+    <div id="rescanBtnWrapper" class="mt-3" style="display: none;">
+        <button onclick="resetScanner()" class="btn btn-outline-warning w-100 fw-bold py-2">
             ↻ Scan Voucher Lain
         </button>
     </div>
 
-    <!-- Container Notifikasi Hasil Validasi -->
-    <div id="resultBox" class="card p-4 text-center shadow-lg" style="display:none;">
-        <h3 id="resultTitle" class="fw-bold mb-2"></h3>
-        <p id="resultKamar" class="fs-4 mb-1"></p>
-        <p id="resultPax" class="fs-5 mb-3"></p>
-        <p id="resultMsg" class="mb-3"></p>
-        <button onclick="startScanner()" class="btn btn-light fw-bold w-100 py-2">Scan Voucher Lain</button>
+    <!-- Kartu Hasil Validasi (Hijau = Valid, Merah = Tidak Valid) -->
+    <div id="resultBox" class="result-card shadow">
+        <h3 class="fw-bold mb-2" id="resultTitle">-</h3>
+        <p class="mb-3" id="resultMessage" style="font-size: 1.05rem;">-</p>
+        <div id="resultDetails" class="bg-black bg-opacity-25 rounded p-2 mb-3 small text-start" style="display: none;"></div>
+        <button onclick="resetScanner()" class="btn btn-light w-100 fw-bold">
+            Scan Voucher Lain
+        </button>
     </div>
 </div>
 
-<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
 <script>
-    const API_URL = "https://script.google.com/macros/s/AKfycbzG466_wXOKrbmLMNKT8962mqmUhL-Y5uJjgHzFEcEp7Lz7cUMZwO1z6xWZsyFkXWW4Og/exec";
-    let html5QrcodeScanner = null;
+    const API_URL = "https://script.google.com/macros/s/AKfycbxQpz_sQFkSP_pkibViksyA1m7k_dhKDBrEfleouz568BGiXD3tivI12sy5kgzrWowkMA/exec";
+    let html5QrCode = null;
     let isProcessing = false;
 
-    function getTodayString() {
-        const today = new Date();
-        const yyyy = today.getFullYear();
-        const mm = String(today.getMonth() + 1).padStart(2, '0');
-        const dd = String(today.getDate()).padStart(2, '0');
-        return `${yyyy}-${mm}-${dd}`;
+    window.onload = function() {
+        startCamera();
+    };
+
+    function startCamera() {
+        isProcessing = false;
+        document.getElementById('resultBox').style.display = 'none';
+        document.getElementById('rescanBtnWrapper').style.display = 'none';
+        document.getElementById('cameraSection').style.display = 'block';
+        document.getElementById('cameraStatus').innerText = "Membuka kamera...";
+
+        if (!html5QrCode) {
+            html5QrCode = new Html5Qrcode("reader");
+        }
+
+        html5QrCode.start(
+            { facingMode: "environment" },
+            {
+                fps: 10,
+                qrbox: { width: 240, height: 240 }
+            },
+            onScanSuccess,
+            (errorMessage) => {
+                // Abaikan error frame kosong saat kamera mencari fokus
+            }
+        ).then(() => {
+            document.getElementById('cameraStatus').innerText = "Arahkan kamera ke QR Code Voucher Tamu...";
+        }).catch((err) => {
+            document.getElementById('cameraStatus').innerHTML = 
+                `<span class="text-danger">Gagal mengakses kamera: ${err}<br>Pastikan izin kamera di browser sudah diizinkan.</span>`;
+        });
     }
 
-    // Di resto.html, pastikan fungsi onScanSuccess seperti ini:
-function onScanSuccess(decodedText) {
-    let cleanVoucherId = decodedText.trim();
-    
-    // Jika QR berisi JSON lama, ambil field id/voucherId-nya; jika sudah berupa "VCH-...", pakai langsung
-    if (cleanVoucherId.startsWith("{")) {
-        try {
-            const obj = JSON.parse(cleanVoucherId);
-            cleanVoucherId = obj.voucherId || obj.id || "";
-        } catch (e) {}
+    function onScanSuccess(decodedText) {
+        if (isProcessing) return;
+
+        let cleanVoucherId = (decodedText || "").toString().trim();
+
+        // Jika QR Code berisi format JSON lama, ekstrak ID-nya
+        if (cleanVoucherId.startsWith("{")) {
+            try {
+                const parsed = JSON.parse(cleanVoucherId);
+                cleanVoucherId = (parsed.voucherId || parsed.id || "").toString().trim();
+            } catch (e) {}
+        }
+
+        // Jangan kirim request jika hasil bacaan kosong
+        if (!cleanVoucherId) return;
+
+        isProcessing = true;
+
+        // Hentikan kamera sementara selama proses validasi ke server
+        if (html5QrCode && html5QrCode.isScanning) {
+            html5QrCode.stop().catch(() => {});
+        }
+
+        document.getElementById('cameraStatus').innerText = "Memvalidasi voucher " + cleanVoucherId + "...";
+        validateVoucherWithServer(cleanVoucherId);
     }
 
-    if (!cleanVoucherId) return; // Abaikan jika hasil bacaan kosong
-    // ... lanjutkan panggil API_URL dengan &voucherId=${encodeURIComponent(cleanVoucherId)} ...
-}
+    function validateVoucherWithServer(voucherId) {
+        const now = new Date();
+        const yyyy = now.getFullYear();
+        const mm = String(now.getMonth() + 1).padStart(2, '0');
+        const dd = String(now.getDate()).padStart(2, '0');
+        const todayStr = `${yyyy}-${mm}-${dd}`;
 
-        // Tampilkan Indikator Memproses Data
-        const resultBox = document.getElementById('resultBox');
-        resultBox.style.display = "block";
-        resultBox.className = "card p-4 text-center shadow-lg bg-info text-dark";
-        document.getElementById('resultTitle').innerText = "MEMPROSES...";
-        document.getElementById('resultKamar').innerText = "Memverifikasi Kode...";
-        document.getElementById('resultPax').innerText = "";
-        document.getElementById('resultMsg').innerText = "Harap tunggu sebentar";
-
-        // 2. Kirim Verifikasi ke Google Apps Script Backend (JSONP)
-        const callbackName = 'onScanValidated_' + Date.now();
-        window[callbackName] = function(response) {
+        const callbackName = "onScanValidated_" + new Date().getTime();
+        window[callbackName] = function(res) {
             delete window[callbackName];
-            showValidationResult(response);
+            showValidationResult(res);
         };
 
         const script = document.createElement('script');
-        const todayStr = getTodayString();
-        script.src = `${API_URL}?action=scan&voucherId=${encodeURIComponent(decodedText)}&today=${todayStr}&callback=${callbackName}`;
-        
+        script.src = `${API_URL}?action=scan&voucherId=${encodeURIComponent(voucherId)}&today=${todayStr}&callback=${callbackName}`;
         script.onerror = function() {
+            delete window[callbackName];
             showValidationResult({
-                result: 'error',
-                message: 'Gagal terhubung ke jaringan database!'
+                result: "error",
+                message: "Gagal terhubung ke server. Periksa koneksi internet!"
             });
         };
-
         document.body.appendChild(script);
         script.onload = () => document.body.removeChild(script);
     }
 
-    function showValidationResult(response) {
+    function showValidationResult(res) {
+        document.getElementById('cameraSection').style.display = 'none';
+        document.getElementById('rescanBtnWrapper').style.display = 'block';
+
         const resultBox = document.getElementById('resultBox');
-        resultBox.style.display = "block";
+        const resultTitle = document.getElementById('resultTitle');
+        const resultMessage = document.getElementById('resultMessage');
+        const resultDetails = document.getElementById('resultDetails');
 
-        if (response.result === 'success') {
-            resultBox.className = "card p-4 text-center shadow-lg bg-success text-white";
-            document.getElementById('resultTitle').innerText = "BERHASIL (VALID)";
-            document.getElementById('resultKamar').innerText = `Kamar: ${response.noKamar}`;
-            document.getElementById('resultPax').innerText = `Jumlah: ${response.pax} Pax`;
-            document.getElementById('resultMsg').innerText = response.message || "Voucher dapat digunakan.";
+        resultBox.style.display = 'block';
+        resultBox.classList.remove('result-valid', 'result-invalid');
+
+        if (res && res.result === 'success') {
+            resultBox.classList.add('result-valid');
+            resultTitle.innerText = "VALID!";
+            resultMessage.innerText = res.message || "Voucher Berhasil Digunakan";
+
+            const d = res.data || res;
+            let katLabel = "Regular";
+            if (d.ebType === "paid") katLabel = "Extra Bed (Paid)";
+            if (d.ebType === "compliment") katLabel = "Extra Bed (Compliment)";
+
+            resultDetails.style.display = 'block';
+            resultDetails.innerHTML = `
+                <div><strong>Kode QR:</strong> ${d.voucherId || '-'}</div>
+                <div><strong>Kamar:</strong> ${d.noKamar || '-'} (${d.pax || 1} Pax)</div>
+                <div><strong>Kategori:</strong> ${katLabel}</div>
+                <div><strong>Waktu Scan:</strong> ${d.scanTime || '-'}</div>
+            `;
         } else {
-            resultBox.className = "card p-4 text-center shadow-lg bg-danger text-white";
-            document.getElementById('resultTitle').innerText = "TIDAK VALID!";
-            document.getElementById('resultKamar').innerText = "";
-            document.getElementById('resultPax').innerText = "";
-            document.getElementById('resultMsg').innerText = response.message || "Voucher tidak dapat digunakan.";
+            resultBox.classList.add('result-invalid');
+            resultTitle.innerText = "TIDAK VALID!";
+            resultMessage.innerText = (res && res.message) ? res.message : "Voucher tidak dapat digunakan.";
+            resultDetails.style.display = 'none';
         }
-
-        document.getElementById('btnRescan').style.display = 'block';
     }
 
-    function startScanner() {
-        isProcessing = false;
-        document.getElementById('resultBox').style.display = 'none';
-        document.getElementById('btnRescan').style.display = 'none';
-        document.getElementById('reader').style.display = 'block';
-
-        if (html5QrcodeScanner) {
-            html5QrcodeScanner.clear().catch(() => {});
-        }
-
-        html5QrcodeScanner = new Html5QrcodeScanner(
-            "reader", 
-            { 
-                fps: 15, 
-                qrbox: { width: 220, height: 220 },
-                aspectRatio: 1.0
-            },
-            /* verbose= */ false
-        );
-
-        html5QrcodeScanner.render(onScanSuccess, onScanFailure);
+    function resetScanner() {
+        startCamera();
     }
-
-    function onScanFailure(error) {
-        // Mengabaikan frame scan normal yang belum menemukan QR
-    }
-
-    // Jalankan scanner otomatis saat halaman pertama dibuka
-    document.addEventListener('DOMContentLoaded', startScanner);
 </script>
 </body>
 </html>
