@@ -17,8 +17,10 @@
             border: 1px solid #e5e7eb;
             margin: 6px auto;
         }
-        .qr-box-wrapper img,
         .qr-box-wrapper canvas {
+            display: none !important;
+        }
+        .qr-box-wrapper img {
             display: block !important;
             margin: 0 auto !important;
             image-rendering: pixelated;
@@ -157,7 +159,7 @@
 
 <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
 <script>
-    const API_URL = "https://script.google.com/macros/s/AKfycbymG0ChF5aCWpPlIPuvy5cgZo21UhvnlT7O2XACbxRKWglHo8xymOthrIcraqvWRGdv/exec";
+    const API_URL = "https://script.google.com/macros/s/AKfycbyhj9ac8LOea0wqv1v0-wTjPvquHJUz9uw1EisarSHJ8eGDZkKIxa4lveeXc6o_HQ7bNw/exec";
 
     const today = new Date();
     const todayStr = today.toISOString().split('T')[0];
@@ -193,10 +195,9 @@
         document.getElementById('totalPaxDisplay').innerText = totalPax + " QR Code";
         return { totalPax, ebSelected };
     }
-
     function renderMultiQR(vouchersData, isReprint = false) {
         const container = document.getElementById('voucherCardsContainer');
-        container.innerHTML = ""; // Bersihkan kontainer utama
+        container.innerHTML = "";
 
         const totalLembar = vouchersData.length;
 
@@ -204,7 +205,18 @@
             const nomorUrut = index + 1;
             const qrDivId = "qrCodeBox_" + index;
 
-            // Tentukan label kategori jika Extra Bed
+            // Pastikan ID voucher selalu diekstrak menjadi string murni (bukan [object Object])
+            let cleanId = "";
+            if (typeof item === "string") {
+                cleanId = item.trim();
+            } else if (item && typeof item.voucherId === "string") {
+                cleanId = item.voucherId.trim();
+            } else if (item && typeof item.id === "string") {
+                cleanId = item.id.trim();
+            } else if (item && item.voucherId && typeof item.voucherId === "object") {
+                cleanId = (item.voucherId.voucherId || item.voucherId.id || "").toString().trim();
+            }
+
             let labelKategori = "";
             if (item.ebType === "paid") {
                 labelKategori = `<div style="font-size: 11px; font-weight: bold; margin-top: 2px;">[EXTRA BED - PAID]</div>`;
@@ -212,12 +224,10 @@
                 labelKategori = `<div style="font-size: 11px; font-weight: bold; margin-top: 2px;">[EXTRA BED - COMPLIMENT]</div>`;
             }
 
-            // Hitung tanggal mulai sarapan (H+1 dari tglCheckin)
             const cIn = new Date(item.tglCheckin + "T00:00:00");
             cIn.setDate(cIn.getDate() + 1);
             const startBreakfast = cIn.toISOString().split('T')[0];
 
-            // Buat kartu struk untuk masing-masing QR
             const cardHTML = `
                 <div class="voucher-sheet text-center bg-white p-2 mb-3" style="border: 1px dashed #999; page-break-after: always; color: #000;">
                     <div style="font-weight: bold; font-size: 14px; letter-spacing: 0.5px;">ASTON TANJUNGPINANG</div>
@@ -232,12 +242,11 @@
                         Berlaku: <strong>${startBreakfast} s/d ${item.tglCheckout}</strong>
                     </div>
                     
-                    <!-- Area QR dengan Quiet Zone Putih Bersih -->
                     <div class="qr-box-wrapper">
                         <div id="${qrDivId}"></div>
                     </div>
 
-                    <div style="font-size: 10px; font-weight: bold; margin-top: 2px;">${item.voucherId}</div>
+                    <div style="font-size: 10px; font-weight: bold; margin-top: 2px;">${cleanId}</div>
                     <div style="font-size: 10px; margin-top: 2px;">
                         Tunjukkan ke staf resto (Voucher ${nomorUrut})
                     </div>
@@ -246,9 +255,8 @@
 
             container.insertAdjacentHTML('beforeend', cardHTML);
 
-            // Generate QR Code dengan kotak besar & renggang (CorrectLevel.L) agar sangat mudah discan kamera HP
             new QRCode(document.getElementById(qrDivId), {
-                text: item.voucherId.toString().trim(),
+                text: cleanId,
                 width: 150,
                 height: 150,
                 colorDark: "#000000",
