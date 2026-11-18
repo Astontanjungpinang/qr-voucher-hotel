@@ -24,6 +24,15 @@
             border: 2px solid #3f3f46;
             background-color: #000;
         }
+        .processing-card {
+            background-color: #1e3a8a;
+            border: 2px solid #3b82f6;
+            border-radius: 12px;
+            padding: 30px 20px;
+            text-align: center;
+            margin-top: 15px;
+            display: none;
+        }
         .result-card {
             border-radius: 12px;
             padding: 20px;
@@ -59,11 +68,11 @@
         </div>
     </div>
 
-    <!-- Tombol Scan Ulang (Muncul setelah scan selesai) -->
-    <div id="rescanBtnWrapper" class="mt-3" style="display: none;">
-        <button onclick="resetScanner()" class="btn btn-outline-warning w-100 fw-bold py-2">
-            ↻ Scan Voucher Lain
-        </button>
+    <!-- Tampilan Sedang Memproses QR (Muncul langsung saat QR terbaca) -->
+    <div id="processingBox" class="processing-card shadow">
+        <div class="spinner-border text-light mb-3" style="width: 3.5rem; height: 3.5rem;" role="status"></div>
+        <h4 class="fw-bold mb-1">Sedang Memproses QR...</h4>
+        <p class="text-info mb-0 small" id="processingCodeText">Memvalidasi data ke server...</p>
     </div>
 
     <!-- Kartu Hasil Validasi (Hijau = Valid, Merah = Tidak Valid) -->
@@ -71,14 +80,14 @@
         <h3 class="fw-bold mb-2" id="resultTitle">-</h3>
         <p class="mb-3" id="resultMessage" style="font-size: 1.05rem;">-</p>
         <div id="resultDetails" class="bg-black bg-opacity-25 rounded p-2 mb-3 small text-start" style="display: none;"></div>
-        <button onclick="resetScanner()" class="btn btn-light w-100 fw-bold">
-            Scan Voucher Lain
+        <button onclick="resetScanner()" class="btn btn-light w-100 fw-bold py-2">
+            ↻ Scan Voucher Lain
         </button>
     </div>
 </div>
 
 <script>
-    const API_URL = "https://script.google.com/macros/s/AKfycbxQpz_sQFkSP_pkibViksyA1m7k_dhKDBrEfleouz568BGiXD3tivI12sy5kgzrWowkMA/exec";
+    const API_URL = "https://script.google.com/macros/s/AKfycbxYFfGCsueJbGVdpo--wU_29Lb3oXUA6UXLLpyJVinm20xWSUQCPhSJ1nz3AFL1K8qbtQ/exec";
     let html5QrCode = null;
     let isProcessing = false;
 
@@ -86,10 +95,23 @@
         startCamera();
     };
 
+    // Efek bunyi bip singkat saat QR terbaca
+    function playBeep() {
+        try {
+            const ctx = new (window.AudioContext || window.webkitAudioContext)();
+            const osc = ctx.createOscillator();
+            osc.type = "sine";
+            osc.frequency.setValueAtTime(880, ctx.currentTime);
+            osc.connect(ctx.destination);
+            osc.start();
+            osc.stop(ctx.currentTime + 0.12);
+        } catch (e) {}
+    }
+
     function startCamera() {
         isProcessing = false;
         document.getElementById('resultBox').style.display = 'none';
-        document.getElementById('rescanBtnWrapper').style.display = 'none';
+        document.getElementById('processingBox').style.display = 'none';
         document.getElementById('cameraSection').style.display = 'block';
         document.getElementById('cameraStatus').innerText = "Membuka kamera...";
 
@@ -100,13 +122,11 @@
         html5QrCode.start(
             { facingMode: "environment" },
             {
-                fps: 10,
-                qrbox: { width: 240, height: 240 }
+                fps: 15,
+                aspectRatio: 1.0
             },
             onScanSuccess,
-            (errorMessage) => {
-                // Abaikan error frame kosong saat kamera mencari fokus
-            }
+            () => {}
         ).then(() => {
             document.getElementById('cameraStatus').innerText = "Arahkan kamera ke QR Code Voucher Tamu...";
         }).catch((err) => {
@@ -120,7 +140,7 @@
 
         let cleanVoucherId = (decodedText || "").toString().trim();
 
-        // Jika QR Code berisi format JSON lama, ekstrak ID-nya
+        // Ekstrak ID jika QR berisi format JSON
         if (cleanVoucherId.startsWith("{")) {
             try {
                 const parsed = JSON.parse(cleanVoucherId);
@@ -128,17 +148,20 @@
             } catch (e) {}
         }
 
-        // Jangan kirim request jika hasil bacaan kosong
         if (!cleanVoucherId) return;
 
         isProcessing = true;
+        playBeep();
 
-        // Hentikan kamera sementara selama proses validasi ke server
+        // Langsung sembunyikan kamera & tampilkan layar "Sedang Memproses QR..."
+        document.getElementById('cameraSection').style.display = 'none';
+        document.getElementById('processingBox').style.display = 'block';
+        document.getElementById('processingCodeText').innerText = "Kode: " + cleanVoucherId;
+
         if (html5QrCode && html5QrCode.isScanning) {
             html5QrCode.stop().catch(() => {});
         }
 
-        document.getElementById('cameraStatus').innerText = "Memvalidasi voucher " + cleanVoucherId + "...";
         validateVoucherWithServer(cleanVoucherId);
     }
 
@@ -150,7 +173,20 @@
         const todayStr = `${yyyy}-${mm}-${dd}`;
 
         const callbackName = "onScanValidated_" + new Date().getTime();
+        
+        // Timeout 12 detik jika jaringan lambat
+        const timeoutTimer = setTimeout(() => {
+            if (window[callbackName]) {
+                delete window[callbackName];
+                showValidationResult({
+                    result: "error",
+                    message: "Waktu koneksi habis (Timeout). Periksa sinyal internet lalu coba scan ulang."
+                });
+            }
+        }, 12000);
+
         window[callbackName] = function(res) {
+            clearTimeout(timeoutTimer);
             delete window[callbackName];
             showValidationResult(res);
         };
@@ -158,19 +194,23 @@
         const script = document.createElement('script');
         script.src = `${API_URL}?action=scan&voucherId=${encodeURIComponent(voucherId)}&today=${todayStr}&callback=${callbackName}`;
         script.onerror = function() {
+            clearTimeout(timeoutTimer);
             delete window[callbackName];
             showValidationResult({
                 result: "error",
-                message: "Gagal terhubung ke server. Periksa koneksi internet!"
+                message: "Gagal terhubung ke server Apps Script!"
             });
         };
         document.body.appendChild(script);
-        script.onload = () => document.body.removeChild(script);
+        script.onload = () => {
+            if (script.parentNode) script.parentNode.removeChild(script);
+        };
     }
 
     function showValidationResult(res) {
+        // Sembunyikan layar "Sedang Memproses QR..."
+        document.getElementById('processingBox').style.display = 'none';
         document.getElementById('cameraSection').style.display = 'none';
-        document.getElementById('rescanBtnWrapper').style.display = 'block';
 
         const resultBox = document.getElementById('resultBox');
         const resultTitle = document.getElementById('resultTitle');
