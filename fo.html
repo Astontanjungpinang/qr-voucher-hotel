@@ -92,13 +92,33 @@
                     <input type="text" id="noKamar" class="form-control" placeholder="Contoh: 301" required>
                 </div>
                 
-                <div class="mb-3">
-                    <label class="form-label fw-bold">Jumlah Tamu Utama (Pax)</label>
-                    <select id="paxUtama" class="form-select" onchange="hitungTotalPax()">
-                        <option value="1">1 Pax (1 QR Code)</option>
-                        <option value="2" selected>2 Pax (2 QR Code Terpisah)</option>
-                    </select>
-                </div>
+               <!-- Pilihan Jumlah Tamu Utama -->
+<div class="mb-3">
+    <label class="form-label fw-bold">Jumlah Tamu (Pax Utama)</label>
+    <select id="paxUtama" class="form-select" onchange="hitungTotalPax()">
+        <option value="1" data-type="regular">1 Pax (Regular)</option>
+        <option value="2" data-type="regular" selected>2 Pax (Regular)</option>
+        <option value="1" data-type="comp_pax">1 Pax Compliment</option>
+        <option value="2" data-type="comp_pax">2 Pax Compliment</option>
+    </select>
+</div>
+
+<!-- Pilihan Tambahan -->
+<div class="mb-3">
+    <label class="form-label fw-bold">Tambahan</label>
+    <div class="form-check">
+        <input class="form-check-input" type="radio" name="extraBedOpt" id="ebNone" value="none" checked onchange="hitungTotalPax()">
+        <label class="form-check-label" for="ebNone">Tidak Ada</label>
+    </div>
+    <div class="form-check">
+        <input class="form-check-input" type="radio" name="extraBedOpt" id="ebPaid" value="paid" onchange="hitungTotalPax()">
+        <label class="form-check-label" for="ebPaid">+1 Extra Bed (Paid)</label>
+    </div>
+    <div class="form-check">
+        <input class="form-check-input" type="radio" name="extraBedOpt" id="ebComp" value="compliment" onchange="hitungTotalPax()">
+        <label class="form-check-label" for="ebComp">+1 Compliment</label>
+    </div>
+</div>
 
                 <div class="mb-3 p-3 bg-light rounded border">
                     <label class="form-label fw-bold text-dark mb-2">Tambahan Extra Bed</label>
@@ -184,16 +204,78 @@
     });
 
     function hitungTotalPax() {
-        const paxUtama = parseInt(document.getElementById('paxUtama').value);
-        const ebSelected = document.querySelector('input[name="extraBedOpt"]:checked').value;
-        
-        let totalPax = paxUtama;
-        if (ebSelected === 'paid' || ebSelected === 'compliment') {
-            totalPax += 1;
-        }
+    const paxSelect = document.getElementById('paxUtama');
+    const selectedOption = paxSelect.options[paxSelect.selectedIndex];
+    const paxUtama = parseInt(selectedOption.value);
+    const paxType = selectedOption.getAttribute('data-type'); // "regular" atau "comp_pax"
+    const ebSelected = document.querySelector('input[name="extraBedOpt"]:checked').value;
 
-        document.getElementById('totalPaxDisplay').innerText = totalPax + " QR Code";
-        return { totalPax, ebSelected };
+    let totalPax = paxUtama;
+    if (ebSelected === 'paid' || ebSelected === 'compliment') {
+        totalPax += 1;
+    }
+
+    // Tentukan kategori akhir untuk pelaporan Accounting
+    let finalCategory = "none";
+    if (paxType === "comp_pax" && ebSelected === "compliment") {
+        finalCategory = "compliment_all"; // Semua pax compliment
+    } else if (paxType === "comp_pax") {
+        finalCategory = "comp_pax"; // 1 Pax / 2 Pax Compliment
+    } else if (ebSelected === "compliment") {
+        finalCategory = "compliment"; // +1 Compliment
+    } else if (ebSelected === "paid") {
+        finalCategory = "paid"; // +1 Extra Bed Paid
+    }
+
+    document.getElementById('totalPaxDisplay').innerText = totalPax + " QR Code";
+    return { totalPax, paxUtama, paxType, ebSelected, finalCategory };
+}
+
+// Fungsi Konfirmasi Sebelum Create & Cek Duplikasi Kamar Aktif
+function confirmAndCreateVoucher() {
+    const noKamar = document.getElementById('noKamar').value.trim();
+    const tglCheckin = document.getElementById('tglCheckin').value;
+    const tglCheckout = document.getElementById('tglCheckout').value;
+    const info = hitungTotalPax();
+
+    if (!noKamar || !tglCheckin || !tglCheckout) {
+        alert("Harap lengkapi Nomor Kamar, Tanggal Check-in, dan Check-out!");
+        return;
+    }
+
+    // 1. Pop-up Konfirmasi Data Input (Pencegahan Salah Tanggal)
+    const konfirmasi = confirm(
+        `PASTIKAN DATA SUDAH SESUAI BOOKING:\n\n` +
+        `• Kamar : ${noKamar}\n` +
+        `• Check-in : ${tglCheckin}\n` +
+        `• Check-out : ${tglCheckout}\n` +
+        `• Total QR : ${info.totalPax} Voucher\n\n` +
+        `Klik OK untuk melanjutkan cetak.`
+    );
+    if (!konfirmasi) return;
+
+    // 2. Cek apakah kamar sudah punya voucher AKTIF di database
+    const cbName = "cbCheckRoom_" + Date.now();
+    window[cbName] = function(res) {
+        delete window[cbName];
+        if (res && res.hasActive) {
+            const lanjut = confirm(
+                `PERINGATAN DUPLIKASI!\n\n` +
+                `Kamar ${noKamar} saat ini masih memiliki ${res.activeCount} voucher AKTIF.\n` +
+                `Jika salah input tanggal, sebaiknya VOID voucher lama terlebih dahulu di menu Reprint.\n\n` +
+                `Tetap buat voucher baru untuk Kamar ${noKamar}?`
+            );
+            if (!lanjut) return;
+        }
+        // Jalankan proses pembuatan voucher
+        prosesCreateVoucherKeServer(noKamar, tglCheckin, tglCheckout, info);
+    };
+
+    const s = document.createElement('script');
+    s.src = `${API_URL}?action=checkActiveRoom&noKamar=${encodeURIComponent(noKamar)}&callback=${cbName}`;
+    document.body.appendChild(s);
+    s.onload = () => s.remove();
+}
     }
     function renderMultiQR(vouchersData, isReprint = false) {
         const container = document.getElementById('voucherCardsContainer');
