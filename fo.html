@@ -10,7 +10,28 @@
     .qrcode-box canvas { display: none !important; }
     .qrcode-box img { display: block !important; margin: 0 auto !important; }
     body { background-color: #eef2f5; padding: 20px; font-family: sans-serif; }
-
+        .qr-box-wrapper {
+            display: inline-block;
+            padding: 10px;
+            background-color: #ffffff !important;
+            border: 1px solid #e5e7eb;
+            margin: 6px auto;
+        }
+        .qr-box-wrapper img,
+        .qr-box-wrapper canvas {
+            display: block !important;
+            margin: 0 auto !important;
+            image-rendering: pixelated;
+        }
+.qr-box-wrapper {
+                border: none !important;
+                padding: 8px !important;
+            }
+            .qr-box-wrapper img,
+            .qr-box-wrapper canvas {
+                -webkit-print-color-adjust: exact !important;
+                print-color-adjust: exact !important;
+            }
     @media print {
         body * { visibility: hidden; }
         #printableVoucherArea, #printableVoucherArea * { visibility: visible; }
@@ -186,9 +207,9 @@
             // Tentukan label kategori jika Extra Bed
             let labelKategori = "";
             if (item.ebType === "paid") {
-                labelKategori = `<div style="font-size: 10px; font-weight: bold; margin-top: 2px;">[EXTRA BED - PAID]</div>`;
+                labelKategori = `<div style="font-size: 11px; font-weight: bold; margin-top: 2px;">[EXTRA BED - PAID]</div>`;
             } else if (item.ebType === "compliment") {
-                labelKategori = `<div style="font-size: 10px; font-weight: bold; margin-top: 2px;">[EXTRA BED - COMPLIMENT]</div>`;
+                labelKategori = `<div style="font-size: 11px; font-weight: bold; margin-top: 2px;">[EXTRA BED - COMPLIMENT]</div>`;
             }
 
             // Hitung tanggal mulai sarapan (H+1 dari tglCheckin)
@@ -198,20 +219,26 @@
 
             // Buat kartu struk untuk masing-masing QR
             const cardHTML = `
-                <div class="voucher-sheet text-center bg-white p-2 mb-3" style="border: 1px dashed #999; page-break-after: always;">
-                    <div style="font-weight: bold; font-size: 13px; letter-spacing: 0.5px;">ASTON TANJUNGPINANG</div>
-                    <div style="font-size: 9px; color: #555; border-bottom: 1px solid #000; padding-bottom: 3px; margin-bottom: 4px;">HOTEL & CONFERENCE CENTER</div>
-                    <div style="font-weight: bold; font-size: 11px;">BREAKFAST VOUCHER (${nomorUrut}/${totalLembar})</div>
+                <div class="voucher-sheet text-center bg-white p-2 mb-3" style="border: 1px dashed #999; page-break-after: always; color: #000;">
+                    <div style="font-weight: bold; font-size: 14px; letter-spacing: 0.5px;">ASTON TANJUNGPINANG</div>
+                    <div style="font-size: 10px; border-bottom: 1px solid #000; padding-bottom: 4px; margin-bottom: 5px;">HOTEL & CONFERENCE CENTER</div>
+                    <div style="font-weight: bold; font-size: 12px;">BREAKFAST VOUCHER (${nomorUrut}/${totalLembar})</div>
                     ${labelKategori}
-                    <div class="d-flex justify-content-between px-2 mt-1" style="font-size: 11px;">
+                    <div class="d-flex justify-content-between px-2 mt-1" style="font-size: 12px;">
                         <span>Kamar: <strong>${item.noKamar}</strong></span>
                         <span>Pax: <strong>1 Pax</strong></span>
                     </div>
-                    <div style="font-size: 10px; margin-bottom: 6px;">
+                    <div style="font-size: 11px; margin-bottom: 4px;">
                         Berlaku: <strong>${startBreakfast} s/d ${item.tglCheckout}</strong>
                     </div>
-                    <div id="${qrDivId}" class="d-flex justify-content-center my-1"></div>
-                    <div style="font-size: 9px; color: #444; margin-top: 4px;">
+                    
+                    <!-- Area QR dengan Quiet Zone Putih Bersih -->
+                    <div class="qr-box-wrapper">
+                        <div id="${qrDivId}"></div>
+                    </div>
+
+                    <div style="font-size: 10px; font-weight: bold; margin-top: 2px;">${item.voucherId}</div>
+                    <div style="font-size: 10px; margin-top: 2px;">
                         Tunjukkan ke staf resto (Voucher ${nomorUrut})
                     </div>
                 </div>
@@ -219,12 +246,14 @@
 
             container.insertAdjacentHTML('beforeend', cardHTML);
 
-            // Generate QR Code ukuran standar awal (120x120) untuk setiap lembar
+            // Generate QR Code dengan kotak besar & renggang (CorrectLevel.L) agar sangat mudah discan kamera HP
             new QRCode(document.getElementById(qrDivId), {
-                text: item.voucherId,
-                width: 120,
-                height: 120,
-                correctLevel: QRCode.CorrectLevel.H
+                text: item.voucherId.toString().trim(),
+                width: 150,
+                height: 150,
+                colorDark: "#000000",
+                colorLight: "#ffffff",
+                correctLevel: QRCode.CorrectLevel.L
             });
         });
 
