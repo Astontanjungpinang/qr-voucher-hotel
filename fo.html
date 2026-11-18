@@ -7,15 +7,12 @@
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
     <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
     <style>
-    .qrcode-box canvas { display: none !important; }
-    .qrcode-box img { display: block !important; margin: 0 auto !important; }
-    body { background-color: #eef2f5; padding: 20px; font-family: sans-serif; }
         .qr-box-wrapper {
             display: inline-block;
-            padding: 10px;
+            padding: 6px;
             background-color: #ffffff !important;
             border: 1px solid #e5e7eb;
-            margin: 6px auto;
+            margin: 3px auto;
         }
         .qr-box-wrapper canvas {
             display: none !important;
@@ -25,41 +22,36 @@
             margin: 0 auto !important;
             image-rendering: pixelated;
         }
-.qr-box-wrapper {
-                border: none !important;
-                padding: 8px !important;
+        body {
+            background-color: #eef2f5;
+            padding: 20px;
+            font-family: sans-serif;
+        }
+
+        @media print {
+            body * { visibility: hidden; }
+            #printableVoucherArea, #printableVoucherArea * { visibility: visible; }
+            #printableVoucherArea {
+                position: absolute;
+                left: 50%;
+                transform: translateX(-50%);
+                top: 0;
+                width: 100% !important;
+                max-width: 220px !important;
+                margin: 0 !important;
+                padding: 0 !important;
             }
-            .qr-box-wrapper img,
-            .qr-box-wrapper canvas {
+            .no-print { display: none !important; }
+            .qr-box-wrapper {
+                border: none !important;
+                padding: 4px !important;
+            }
+            .qr-box-wrapper img {
                 -webkit-print-color-adjust: exact !important;
                 print-color-adjust: exact !important;
             }
-    @media print {
-        body * { visibility: hidden; }
-        #printableVoucherArea, #printableVoucherArea * { visibility: visible; }
-        #printableVoucherArea { 
-            position: absolute; 
-            left: 50%;
-            transform: translateX(-50%);
-            top: 0; 
-            width: 100% !important;
-            max-width: 220px !important;
-            margin: 0 !important;
-            padding: 0 !important;
         }
-        .no-print { display: none !important; }
-        .voucher-card { 
-            page-break-after: always; 
-            margin: 0 !important; 
-            padding: 4px !important;
-            border: none !important;
-        }
-        @page {
-            size: auto;
-            margin: 0mm;
-        }
-    }
-</style>
+    </style>
 </head>
 <body>
 
@@ -72,211 +64,352 @@
 
 <div class="container no-print" style="max-width: 500px;">
     <a href="index.html" class="btn btn-sm btn-outline-secondary mb-3">← Kembali</a>
-    
-    <ul class="nav nav-pills nav-justified mb-3" id="foTab">
-        <li class="nav-item">
-            <button class="nav-link active" id="create-tab" data-bs-toggle="tab" data-bs-target="#createPane">Buat Voucher Baru</button>
+
+    <ul class="nav nav-pills nav-justified mb-3" id="foTab" role="tablist">
+        <li class="nav-item" role="presentation">
+            <button class="nav-link active fw-bold" id="create-tab" data-bs-toggle="tab" data-bs-target="#createPane" type="button" role="tab">Buat Voucher Baru</button>
         </li>
-        <li class="nav-item">
-            <button class="nav-link" id="reprint-tab" data-bs-toggle="tab" data-bs-target="#reprintPane">Cetak Ulang (Hilang)</button>
+        <li class="nav-item" role="presentation">
+            <button class="nav-link fw-bold" id="reprint-tab" data-bs-toggle="tab" data-bs-target="#reprintPane" type="button" role="tab">Cetak Ulang / Void</button>
         </li>
     </ul>
 
-    <div class="tab-content" id="foTabContent">
-        <!-- Form Buat Voucher Baru -->
-        <div class="tab-pane fade show active card p-4 shadow-sm" id="createPane">
-            <h4 class="mb-3 text-primary fw-bold">Buat Voucher Breakfast</h4>
-            <form id="voucherForm">
-                <div class="mb-3">
-                    <label class="form-label fw-bold">Nomor Kamar</label>
-                    <input type="text" id="noKamar" class="form-control" placeholder="Contoh: 301" required>
-                </div>
-                
-               <!-- Pilihan Jumlah Tamu Utama -->
-<div class="mb-3">
-    <label class="form-label fw-bold">Jumlah Tamu (Pax Utama)</label>
-    <select id="paxUtama" class="form-select" onchange="hitungTotalPax()">
-        <option value="1" data-type="regular">1 Pax (Regular)</option>
-        <option value="2" data-type="regular" selected>2 Pax (Regular)</option>
-        <option value="1" data-type="comp_pax">1 Pax Compliment</option>
-        <option value="2" data-type="comp_pax">2 Pax Compliment</option>
-    </select>
-</div>
+    <div class="tab-content">
+        <!-- TAB 1: BUAT VOUCHER BARU -->
+        <div class="tab-pane fade show active" id="createPane" role="tabpanel">
+            <div class="card shadow-sm border-0 p-4">
+                <h5 class="fw-bold text-primary mb-3">Generate QR Voucher Baru</h5>
+                <form id="createForm" onsubmit="confirmAndCreateVoucher(event)">
+                    <div class="mb-3">
+                        <label class="form-label fw-bold">Nomor Kamar</label>
+                        <input type="text" id="noKamar" class="form-control" placeholder="Contoh: 105" required>
+                    </div>
 
-<!-- Pilihan Tambahan -->
-<div class="mb-3">
-    <label class="form-label fw-bold">Tambahan</label>
-    <div class="form-check">
-        <input class="form-check-input" type="radio" name="extraBedOpt" id="ebNone" value="none" checked onchange="hitungTotalPax()">
-        <label class="form-check-label" for="ebNone">Tidak Ada</label>
-    </div>
-    <div class="form-check">
-        <input class="form-check-input" type="radio" name="extraBedOpt" id="ebPaid" value="paid" onchange="hitungTotalPax()">
-        <label class="form-check-label" for="ebPaid">+1 Extra Bed (Paid)</label>
-    </div>
-    <div class="form-check">
-        <input class="form-check-input" type="radio" name="extraBedOpt" id="ebComp" value="compliment" onchange="hitungTotalPax()">
-        <label class="form-check-label" for="ebComp">+1 Compliment</label>
-    </div>
-</div>
+                    <div class="row mb-3">
+                        <div class="col-6">
+                            <label class="form-label fw-bold">Tanggal Check-in</label>
+                            <input type="date" id="tglCheckin" class="form-control" required>
+                        </div>
+                        <div class="col-6">
+                            <label class="form-label fw-bold">Tanggal Check-out</label>
+                            <input type="date" id="tglCheckout" class="form-control" required>
+                        </div>
+                    </div>
 
-                <div class="mb-3 p-3 bg-light rounded border">
-                    <label class="form-label fw-bold text-dark mb-2">Tambahan Extra Bed</label>
-                    <div class="form-check mb-2">
-                        <input class="form-check-input" type="radio" name="extraBedOpt" id="ebNone" value="none" checked onchange="hitungTotalPax()">
-                        <label class="form-check-label" for="ebNone">Tanpa Extra Bed</label>
+                    <div class="mb-3">
+                        <label class="form-label fw-bold">Jumlah Tamu (Pax Utama)</label>
+                        <select id="paxUtama" class="form-select" onchange="hitungTotalPax()">
+                            <option value="1" data-type="regular">1 Pax (Regular)</option>
+                            <option value="2" data-type="regular" selected>2 Pax (Regular)</option>
+                            <option value="1" data-type="comp_pax">1 Pax Compliment</option>
+                            <option value="2" data-type="comp_pax">2 Pax Compliment</option>
+                        </select>
                     </div>
-                    <div class="form-check mb-2">
-                        <input class="form-check-input" type="radio" name="extraBedOpt" id="ebPaid" value="paid" onchange="hitungTotalPax()">
-                        <label class="form-check-label" for="ebPaid">+1 Extra Bed (Bayar) [+1 QR]</label>
-                    </div>
-                    <div class="form-check">
-                        <input class="form-check-input" type="radio" name="extraBedOpt" id="ebCompliment" value="compliment" onchange="hitungTotalPax()">
-                        <label class="form-check-label text-success fw-bold" for="ebCompliment">+1 Extra Bed Compliment [+1 QR]</label>
-                    </div>
-                </div>
 
-                <div class="alert alert-info py-2 mb-3 d-flex justify-content-between align-items-center">
-                    <span>Total Lembar QR Cetak:</span>
-                    <strong class="fs-5" id="totalPaxDisplay">2 QR Code</strong>
-                </div>
+                    <div class="mb-3">
+                        <label class="form-label fw-bold">Tambahan</label>
+                        <div class="form-check">
+                            <input class="form-check-input" type="radio" name="extraBedOpt" id="ebNone" value="none" checked onchange="hitungTotalPax()">
+                            <label class="form-check-label" for="ebNone">Tidak Ada</label>
+                        </div>
+                        <div class="form-check">
+                            <input class="form-check-input" type="radio" name="extraBedOpt" id="ebPaid" value="paid" onchange="hitungTotalPax()">
+                            <label class="form-check-label" for="ebPaid">+1 Extra Bed (Paid)</label>
+                        </div>
+                        <div class="form-check">
+                            <input class="form-check-input" type="radio" name="extraBedOpt" id="ebComp" value="compliment" onchange="hitungTotalPax()">
+                            <label class="form-check-label" for="ebComp">+1 Compliment</label>
+                        </div>
+                    </div>
 
-                <div class="row">
-                    <div class="col-6 mb-3">
-                        <label class="form-label">Tgl Check-in</label>
-                        <input type="date" id="tglCheckin" class="form-control" required>
+                    <div class="alert alert-info py-2 small d-flex justify-content-between align-items-center">
+                        <span>Total QR yang akan dicetak:</span>
+                        <strong id="totalPaxDisplay" style="font-size: 14px;">2 QR Code</strong>
                     </div>
-                    <div class="col-6 mb-3">
-                        <label class="form-label">Tgl Check-out</label>
-                        <input type="date" id="tglCheckout" class="form-control" required>
-                    </div>
-                </div>
-                <button type="submit" id="btnSubmit" class="btn btn-primary w-100 fw-bold py-2">Buat & Generate QR</button>
-            </form>
+
+                    <button type="submit" id="btnSubmitCreate" class="btn btn-primary w-100 fw-bold py-2">
+                        Buat & Cetak QR Voucher
+                    </button>
+                </form>
+            </div>
         </div>
 
-        <!-- Form Cetak Ulang -->
-        <div class="tab-pane fade card p-4 shadow-sm" id="reprintPane">
-            <h4 class="mb-3 text-warning fw-bold">Cetak Ulang Voucher Hilang</h4>
-            <form id="reprintForm">
+        <!-- TAB 2: CETAK ULANG / VOID VOUCHER -->
+        <div class="tab-pane fade" id="reprintPane" role="tabpanel">
+            <div class="card shadow-sm border-0 p-4">
+                <h5 class="fw-bold text-secondary mb-3">Cari Voucher Aktif / Void</h5>
                 <div class="mb-3">
-                    <label class="form-label">Nomor Kamar Tamu</label>
-                    <input type="text" id="searchKamar" class="form-control" placeholder="Contoh: 301" required>
+                    <label class="form-label fw-bold">Masukkan Nomor Kamar</label>
+                    <input type="text" id="reprintNoKamar" class="form-control" placeholder="Contoh: 105">
                 </div>
-                <button type="submit" id="btnReprintSubmit" class="btn btn-warning w-100 fw-bold">Cari Data Voucher</button>
-            </form>
+                <button type="button" onclick="searchActiveVoucher()" id="btnSearchReprint" class="btn btn-dark w-100 fw-bold py-2">
+                    Cari & Cetak Ulang Voucher
+                </button>
+
+                <!-- Tombol & Panel Void Supervisor -->
+                <div class="mt-4 pt-3 border-top">
+                    <button type="button" onclick="toggleVoidPanel()" class="btn btn-outline-danger btn-sm w-100 fw-bold">
+                        Batalkan / Void Voucher (Otorisasi Supervisor)
+                    </button>
+
+                    <div id="voidSection" class="mt-2 p-3 border border-danger rounded bg-light" style="display: none;">
+                        <h6 class="text-danger fw-bold mb-2" style="font-size: 13px;">Pembatalan Voucher (Supervisor)</h6>
+                        <p class="text-muted small mb-2">Gunakan fitur ini jika terjadi kesalahan input tanggal check-in/check-out. Pastikan nomor kamar di atas sudah diisi.</p>
+                        <div class="mb-2">
+                            <label class="form-label small fw-bold mb-1">Password Supervisor</label>
+                            <input type="password" id="spvPassword" class="form-control form-control-sm" placeholder="Masukkan password supervisor...">
+                        </div>
+                        <div class="mb-2">
+                            <label class="form-label small fw-bold mb-1">Alasan / Note Pembatalan</label>
+                            <input type="text" id="voidReason" class="form-control form-control-sm" placeholder="Contoh: Salah input tanggal check-out">
+                        </div>
+                        <button type="button" onclick="submitVoidVoucher()" id="btnConfirmVoid" class="btn btn-danger btn-sm w-100 fw-bold">
+                            Konfirmasi Void Voucher
+                        </button>
+                    </div>
+                </div>
+            </div>
         </div>
     </div>
 </div>
 
-<!-- Area Cetakan Thermal Multi-QR (Aston Tanjungpinang) -->
-<div id="printableVoucherArea" class="m-auto bg-white" style="display: none; max-width: 220px;">
+<!-- AREA CETAK VOUCHER -->
+<div id="printableVoucherArea" class="mt-4" style="display: none;">
+    <div class="text-center no-print mb-3">
+        <button onclick="window.print()" class="btn btn-success fw-bold px-4 py-2 shadow-sm">
+            Print Sekarang
+        </button>
+    </div>
     <div id="voucherCardsContainer"></div>
-    <div class="text-center mt-2 no-print">
-        <button onclick="window.print()" class="btn btn-sm btn-success w-100 fw-bold">Cetak Kertas (Print All QR)</button>
-    </div>
 </div>
 
 <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
 <script>
-    const API_URL = "https://script.google.com/macros/s/AKfycbxbnvT913H7ogO31kmrcOHSKDl2sCEz_e2oOAoRlNFckIlEjWwvk8CVqJ827cqsKiXipQ/exec";
+    const API_URL = "https://script.google.com/macros/s/AKfycby3W6SaeLSnp0fCXMYG_wEjv8BcYL3GjZpMHnQBonD7sHaraXlSHZuKN9ouqfBFv2TtVA/exec";
 
-    const today = new Date();
-    const todayStr = today.toISOString().split('T')[0];
-    const tomorrow = new Date();
-    tomorrow.setDate(today.getDate() + 1);
-    const tomorrowStr = tomorrow.toISOString().split('T')[0];
+    window.onload = function() {
+        const today = new Date();
+        const tomorrow = new Date(today);
+        tomorrow.setDate(tomorrow.getDate() + 1);
 
-    const inputCheckin = document.getElementById('tglCheckin');
-    const inputCheckout = document.getElementById('tglCheckout');
-
-    inputCheckin.min = todayStr;
-    inputCheckout.min = todayStr;
-    inputCheckin.value = todayStr;
-    inputCheckout.value = tomorrowStr;
-
-    inputCheckin.addEventListener('change', function() {
-        const selectedCheckin = inputCheckin.value;
-        inputCheckout.min = selectedCheckin;
-        if (inputCheckout.value < selectedCheckin) {
-            inputCheckout.value = selectedCheckin;
-        }
-    });
-
-    function hitungTotalPax() {
-    const paxSelect = document.getElementById('paxUtama');
-    const selectedOption = paxSelect.options[paxSelect.selectedIndex];
-    const paxUtama = parseInt(selectedOption.value);
-    const paxType = selectedOption.getAttribute('data-type'); // "regular" atau "comp_pax"
-    const ebSelected = document.querySelector('input[name="extraBedOpt"]:checked').value;
-
-    let totalPax = paxUtama;
-    if (ebSelected === 'paid' || ebSelected === 'compliment') {
-        totalPax += 1;
-    }
-
-    // Tentukan kategori akhir untuk pelaporan Accounting
-    let finalCategory = "none";
-    if (paxType === "comp_pax" && ebSelected === "compliment") {
-        finalCategory = "compliment_all"; // Semua pax compliment
-    } else if (paxType === "comp_pax") {
-        finalCategory = "comp_pax"; // 1 Pax / 2 Pax Compliment
-    } else if (ebSelected === "compliment") {
-        finalCategory = "compliment"; // +1 Compliment
-    } else if (ebSelected === "paid") {
-        finalCategory = "paid"; // +1 Extra Bed Paid
-    }
-
-    document.getElementById('totalPaxDisplay').innerText = totalPax + " QR Code";
-    return { totalPax, paxUtama, paxType, ebSelected, finalCategory };
-}
-
-// Fungsi Konfirmasi Sebelum Create & Cek Duplikasi Kamar Aktif
-function confirmAndCreateVoucher() {
-    const noKamar = document.getElementById('noKamar').value.trim();
-    const tglCheckin = document.getElementById('tglCheckin').value;
-    const tglCheckout = document.getElementById('tglCheckout').value;
-    const info = hitungTotalPax();
-
-    if (!noKamar || !tglCheckin || !tglCheckout) {
-        alert("Harap lengkapi Nomor Kamar, Tanggal Check-in, dan Check-out!");
-        return;
-    }
-
-    // 1. Pop-up Konfirmasi Data Input (Pencegahan Salah Tanggal)
-    const konfirmasi = confirm(
-        `PASTIKAN DATA SUDAH SESUAI BOOKING:\n\n` +
-        `• Kamar : ${noKamar}\n` +
-        `• Check-in : ${tglCheckin}\n` +
-        `• Check-out : ${tglCheckout}\n` +
-        `• Total QR : ${info.totalPax} Voucher\n\n` +
-        `Klik OK untuk melanjutkan cetak.`
-    );
-    if (!konfirmasi) return;
-
-    // 2. Cek apakah kamar sudah punya voucher AKTIF di database
-    const cbName = "cbCheckRoom_" + Date.now();
-    window[cbName] = function(res) {
-        delete window[cbName];
-        if (res && res.hasActive) {
-            const lanjut = confirm(
-                `PERINGATAN DUPLIKASI!\n\n` +
-                `Kamar ${noKamar} saat ini masih memiliki ${res.activeCount} voucher AKTIF.\n` +
-                `Jika salah input tanggal, sebaiknya VOID voucher lama terlebih dahulu di menu Reprint.\n\n` +
-                `Tetap buat voucher baru untuk Kamar ${noKamar}?`
-            );
-            if (!lanjut) return;
-        }
-        // Jalankan proses pembuatan voucher
-        prosesCreateVoucherKeServer(noKamar, tglCheckin, tglCheckout, info);
+        document.getElementById('tglCheckin').value = today.toISOString().split('T')[0];
+        document.getElementById('tglCheckout').value = tomorrow.toISOString().split('T')[0];
+        hitungTotalPax();
     };
 
-    const s = document.createElement('script');
-    s.src = `${API_URL}?action=checkActiveRoom&noKamar=${encodeURIComponent(noKamar)}&callback=${cbName}`;
-    document.body.appendChild(s);
-    s.onload = () => s.remove();
-}
+    function hitungTotalPax() {
+        const paxSelect = document.getElementById('paxUtama');
+        const selectedOption = paxSelect.options[paxSelect.selectedIndex];
+        const paxUtama = parseInt(selectedOption.value);
+        const paxType = selectedOption.getAttribute('data-type');
+        const ebSelected = document.querySelector('input[name="extraBedOpt"]:checked').value;
+
+        let totalPax = paxUtama;
+        if (ebSelected === 'paid' || ebSelected === 'compliment') {
+            totalPax += 1;
+        }
+
+        let finalCategory = "none";
+        if (paxType === "comp_pax" && ebSelected === "compliment") {
+            finalCategory = "compliment_all";
+        } else if (paxType === "comp_pax") {
+            finalCategory = "comp_pax";
+        } else if (ebSelected === "compliment") {
+            finalCategory = "compliment";
+        } else if (ebSelected === "paid") {
+            finalCategory = "paid";
+        }
+
+        document.getElementById('totalPaxDisplay').innerText = totalPax + " QR Code";
+        return { totalPax, paxUtama, paxType, ebSelected, finalCategory };
     }
+
+    function confirmAndCreateVoucher(e) {
+        e.preventDefault();
+
+        const noKamar = document.getElementById('noKamar').value.trim();
+        const tglCheckin = document.getElementById('tglCheckin').value;
+        const tglCheckout = document.getElementById('tglCheckout').value;
+        const info = hitungTotalPax();
+
+        if (!noKamar || !tglCheckin || !tglCheckout) {
+            alert("Harap lengkapi semua data!");
+            return;
+        }
+
+        if (tglCheckout <= tglCheckin) {
+            alert("Tanggal Check-out harus setelah Tanggal Check-in!");
+            return;
+        }
+
+        const konfirmasi = confirm(
+            `PASTIKAN DATA SUDAH SESUAI BOOKING:\n\n` +
+            `• Kamar : ${noKamar}\n` +
+            `• Check-in : ${tglCheckin}\n` +
+            `• Check-out : ${tglCheckout}\n` +
+            `• Total QR : ${info.totalPax} Voucher\n\n` +
+            `Klik OK untuk melanjutkan.`
+        );
+        if (!konfirmasi) return;
+
+        const btn = document.getElementById('btnSubmitCreate');
+        btn.disabled = true;
+        btn.innerText = "Memeriksa kamar...";
+
+        const cbCheck = "cbCheckRoom_" + Date.now();
+        window[cbCheck] = function(res) {
+            delete window[cbCheck];
+            if (res && res.hasActive) {
+                const lanjut = confirm(
+                    `PERINGATAN DUPLIKASI!\n\n` +
+                    `Kamar ${noKamar} saat ini masih memiliki ${res.activeCount} voucher AKTIF.\n` +
+                    `Jika sebelumnya salah input tanggal, sebaiknya VOID voucher lama di tab "Cetak Ulang / Void".\n\n` +
+                    `Tetap buat voucher baru untuk Kamar ${noKamar}?`
+                );
+                if (!lanjut) {
+                    btn.disabled = false;
+                    btn.innerText = "Buat & Cetak QR Voucher";
+                    return;
+                }
+            }
+            prosesCreateVoucherKeServer(noKamar, tglCheckin, tglCheckout, info);
+        };
+
+        const s = document.createElement('script');
+        s.src = `${API_URL}?action=checkActiveRoom&noKamar=${encodeURIComponent(noKamar)}&callback=${cbCheck}`;
+        s.onerror = function() {
+            delete window[cbCheck];
+            prosesCreateVoucherKeServer(noKamar, tglCheckin, tglCheckout, info);
+        };
+        document.body.appendChild(s);
+        s.onload = () => s.remove();
+    }
+
+    function prosesCreateVoucherKeServer(noKamar, tglCheckin, tglCheckout, info) {
+        const btn = document.getElementById('btnSubmitCreate');
+        btn.disabled = true;
+        btn.innerText = "Membuat QR Voucher...";
+
+        const cbCreate = "cbCreate_" + Date.now();
+        window[cbCreate] = function(res) {
+            delete window[cbCreate];
+            btn.disabled = false;
+            btn.innerText = "Buat & Cetak QR Voucher";
+
+            if (res && res.result === "success") {
+                const listVouchers = res.vouchers || res.data || [];
+                renderMultiQR(listVouchers, false);
+            } else {
+                alert(res ? res.message : "Gagal membuat voucher.");
+            }
+        };
+
+        const url = `${API_URL}?action=create&noKamar=${encodeURIComponent(noKamar)}&pax=${info.totalPax}&tglCheckin=${tglCheckin}&tglCheckout=${tglCheckout}&ebType=${encodeURIComponent(info.finalCategory)}&callback=${cbCreate}`;
+        const script = document.createElement('script');
+        script.src = url;
+        script.onerror = function() {
+            delete window[cbCreate];
+            btn.disabled = false;
+            btn.innerText = "Buat & Cetak QR Voucher";
+            alert("Gagal terhubung ke server!");
+        };
+        document.body.appendChild(script);
+        script.onload = () => script.remove();
+    }
+
+    function searchActiveVoucher() {
+        const noKamar = document.getElementById('reprintNoKamar').value.trim();
+        if (!noKamar) {
+            alert("Masukkan Nomor Kamar terlebih dahulu!");
+            return;
+        }
+
+        const btn = document.getElementById('btnSearchReprint');
+        btn.disabled = true;
+        btn.innerText = "Mencari...";
+
+        const cbSearch = "cbReprint_" + Date.now();
+        window[cbSearch] = function(res) {
+            delete window[cbSearch];
+            btn.disabled = false;
+            btn.innerText = "Cari & Cetak Ulang Voucher";
+
+            if (res && res.result === "success") {
+                const listVouchers = res.vouchers || res.data || [];
+                if (listVouchers.length === 0) {
+                    alert("Tidak ditemukan voucher AKTIF untuk Kamar " + noKamar);
+                    return;
+                }
+                renderMultiQR(listVouchers, true);
+            } else {
+                alert(res ? res.message : "Voucher tidak ditemukan.");
+            }
+        };
+
+        const script = document.createElement('script');
+        script.src = `${API_URL}?action=reprint&noKamar=${encodeURIComponent(noKamar)}&callback=${cbSearch}`;
+        script.onerror = function() {
+            delete window[cbSearch];
+            btn.disabled = false;
+            btn.innerText = "Cari & Cetak Ulang Voucher";
+            alert("Gagal terhubung ke server!");
+        };
+        document.body.appendChild(script);
+        script.onload = () => script.remove();
+    }
+
+    function toggleVoidPanel() {
+        const panel = document.getElementById('voidSection');
+        panel.style.display = (panel.style.display === 'none' || panel.style.display === '') ? 'block' : 'none';
+    }
+
+    function submitVoidVoucher() {
+        const noKamar = document.getElementById('reprintNoKamar').value.trim();
+        const password = document.getElementById('spvPassword').value.trim();
+        const reason = document.getElementById('voidReason').value.trim();
+
+        if (!noKamar) {
+            alert("Masukkan Nomor Kamar pada kolom di atas terlebih dahulu!");
+            return;
+        }
+        if (!password || !reason) {
+            alert("Password Supervisor dan Alasan Pembatalan wajib diisi!");
+            return;
+        }
+
+        const btn = document.getElementById('btnConfirmVoid');
+        btn.disabled = true;
+        btn.innerText = "Memproses Void...";
+
+        const cbVoid = "cbVoid_" + Date.now();
+        window[cbVoid] = function(res) {
+            delete window[cbVoid];
+            btn.disabled = false;
+            btn.innerText = "Konfirmasi Void Voucher";
+
+            if (res && res.result === "success") {
+                alert(res.message);
+                document.getElementById('spvPassword').value = "";
+                document.getElementById('voidReason').value = "";
+                document.getElementById('voidSection').style.display = "none";
+                document.getElementById('printableVoucherArea').style.display = "none";
+            } else {
+                alert(res ? res.message : "Gagal melakukan Void.");
+            }
+        };
+
+        const script = document.createElement('script');
+        script.src = `${API_URL}?action=void&noKamar=${encodeURIComponent(noKamar)}&password=${encodeURIComponent(password)}&reason=${encodeURIComponent(reason)}&callback=${cbVoid}`;
+        script.onerror = function() {
+            delete window[cbVoid];
+            btn.disabled = false;
+            btn.innerText = "Konfirmasi Void Voucher";
+            alert("Gagal terhubung ke server!");
+        };
+        document.body.appendChild(script);
+        script.onload = () => script.remove();
+    }
+
     function renderMultiQR(vouchersData, isReprint = false) {
         const container = document.getElementById('voucherCardsContainer');
         container.innerHTML = "";
@@ -287,7 +420,6 @@ function confirmAndCreateVoucher() {
             const nomorUrut = index + 1;
             const qrDivId = "qrCodeBox_" + index;
 
-            // Ekstrak ID voucher murni untuk dimasukkan ke dalam QR Code
             let cleanId = "";
             if (typeof item === "string") {
                 cleanId = item.trim();
@@ -302,15 +434,14 @@ function confirmAndCreateVoucher() {
             let labelKategori = "";
             if (item.ebType === "paid") {
                 labelKategori = `<div style="font-size: 9.5px; font-weight: bold; margin-top: 1px;">[EXTRA BED - PAID]</div>`;
-            } else if (item.ebType === "compliment") {
-                labelKategori = `<div style="font-size: 9.5px; font-weight: bold; margin-top: 1px;">[EXTRA BED - COMPLIMENT]</div>`;
+            } else if (item.ebType === "compliment" || item.ebType === "comp_pax" || item.ebType === "compliment_all") {
+                labelKategori = `<div style="font-size: 9.5px; font-weight: bold; margin-top: 1px;">[COMPLIMENT]</div>`;
             }
 
             const cIn = new Date(item.tglCheckin + "T00:00:00");
             cIn.setDate(cIn.getDate() + 1);
             const startBreakfast = cIn.toISOString().split('T')[0];
 
-            // Ukuran struk dibuat lebih ringkas (max-width: 195px) & nomor VCH dihapus dari tampilan
             const cardHTML = `
                 <div class="voucher-sheet text-center bg-white mx-auto mb-2" style="max-width: 195px; padding: 6px 8px; border: 1px dashed #999; page-break-after: always; color: #000;">
                     <div style="font-weight: bold; font-size: 12px; letter-spacing: 0.4px;">ASTON TANJUNGPINANG</div>
@@ -325,7 +456,7 @@ function confirmAndCreateVoucher() {
                         Berlaku: <strong>${startBreakfast} s/d ${item.tglCheckout}</strong>
                     </div>
                     
-                    <div class="qr-box-wrapper" style="padding: 6px; margin: 3px auto;">
+                    <div class="qr-box-wrapper">
                         <div id="${qrDivId}"></div>
                     </div>
 
@@ -337,7 +468,6 @@ function confirmAndCreateVoucher() {
 
             container.insertAdjacentHTML('beforeend', cardHTML);
 
-            // Ukuran QR diperkecil menjadi 115x115 dengan kotak renggang (CorrectLevel.L) agar tetap mudah discan
             new QRCode(document.getElementById(qrDivId), {
                 text: cleanId,
                 width: 115,
@@ -350,91 +480,6 @@ function confirmAndCreateVoucher() {
 
         document.getElementById('printableVoucherArea').style.display = 'block';
     }
-
-    function callGoogleScript(params, callbackName) {
-        const script = document.createElement('script');
-        let queryString = '?callback=' + callbackName;
-        for (let key in params) {
-            queryString += '&' + key + '=' + encodeURIComponent(params[key]);
-        }
-        script.src = API_URL + queryString;
-        
-        script.onerror = function() {
-            alert("Gagal koneksi ke server database!");
-            const btnSubmit = document.getElementById('btnSubmit');
-            if (btnSubmit) { btnSubmit.disabled = false; btnSubmit.innerText = "Buat & Generate QR"; }
-        };
-
-        document.body.appendChild(script);
-        script.onload = () => document.body.removeChild(script);
-    }
-
-    window.onVoucherCreated = function(data) {
-        const btn = document.getElementById('btnSubmit');
-        btn.disabled = false;
-        btn.innerText = "Buat & Generate QR";
-
-        if(data.result === 'success') {
-            const noKamar = document.getElementById('noKamar').value;
-            const tglCheckin = document.getElementById('tglCheckin').value;
-            const tglCheckout = document.getElementById('tglCheckout').value;
-            const { ebSelected } = hitungTotalPax();
-
-            const vouchersList = data.vouchers.map(vId => ({
-                voucherId: vId,
-                noKamar: noKamar,
-                tglCheckin: tglCheckin,
-                tglCheckout: tglCheckout,
-                ebType: ebSelected
-            }));
-
-            renderMultiQR(vouchersList, false);
-        } else {
-            alert(data.message || "Gagal membuat voucher.");
-        }
-    };
-
-    window.onVoucherSearched = function(data) {
-        const btn = document.getElementById('btnReprintSubmit');
-        btn.disabled = false;
-        btn.innerText = "Cari Data Voucher";
-
-        if(data.result === 'success') {
-            renderMultiQR(data.vouchers, true);
-        } else {
-            alert(data.message || "Data tidak ditemukan.");
-        }
-    };
-
-    document.getElementById('voucherForm').addEventListener('submit', function(e) {
-        e.preventDefault();
-        const btn = document.getElementById('btnSubmit');
-        btn.disabled = true;
-        btn.innerText = "Memproses...";
-
-        const { totalPax, ebSelected } = hitungTotalPax();
-
-        callGoogleScript({
-            action: 'create',
-            noKamar: document.getElementById('noKamar').value,
-            pax: totalPax,
-            ebType: ebSelected,
-            tglCheckin: document.getElementById('tglCheckin').value,
-            tglCheckout: document.getElementById('tglCheckout').value
-        }, 'onVoucherCreated');
-    });
-
-    document.getElementById('reprintForm').addEventListener('submit', function(e) {
-        e.preventDefault();
-        const btn = document.getElementById('btnReprintSubmit');
-        btn.disabled = true;
-        btn.innerText = "Mencari...";
-
-        callGoogleScript({
-            action: 'search',
-            noKamar: document.getElementById('searchKamar').value.trim()
-        }, 'onVoucherSearched');
-    });
 </script>
 </body>
 </html>
