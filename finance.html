@@ -3,231 +3,249 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Accounting Report - QR Breakfast Voucher</title>
+    <title>Laporan Rekonsiliasi & Audit Voucher Breakfast - Aston Tanjungpinang</title>
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
     <style>
-        html, body { 
-            height: 100%; 
-            margin: 0; 
-            background-color: #f4f6f9; 
-            font-family: sans-serif; 
+        :root {
+            --bg-body: #f4f6f9;
+            --card-border: #e2e8f0;
+            --text-main: #1e293b;
+            --text-muted: #64748b;
         }
-        .main-wrapper {
-            min-height: 100vh;
-            width: 100%;
-            padding: 15px 20px;
-            display: flex;
-            flex-direction: column;
+        body {
+            background-color: var(--bg-body);
+            color: var(--text-main);
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+            padding: 20px;
+        }
+        .report-container {
+            max-width: 1380px;
+            margin: 0 auto;
+        }
+        .header-bar {
+            background: #ffffff;
+            border: 1px solid var(--card-border);
+            border-radius: 12px;
+            padding: 16px 24px;
+            margin-bottom: 18px;
+            box-shadow: 0 1px 3px rgba(0, 0, 0, 0.04);
+        }
+        .filter-card {
+            background: #ffffff;
+            border: 1px solid var(--card-border);
+            border-radius: 12px;
+            padding: 18px 24px;
+            margin-bottom: 18px;
+            box-shadow: 0 1px 3px rgba(0, 0, 0, 0.04);
+        }
+        .kpi-card {
+            background: #ffffff;
+            border: 1px solid var(--card-border);
+            border-radius: 12px;
+            padding: 16px 18px;
+            height: 100%;
+            box-shadow: 0 1px 3px rgba(0, 0, 0, 0.04);
+            border-top: 4px solid #cbd5e1;
+            transition: transform 0.15s ease;
+        }
+        .kpi-card:hover {
+            transform: translateY(-2px);
+        }
+        .kpi-kamar { border-top-color: #64748b; }
+        .kpi-terbit { border-top-color: #2563eb; }
+        .kpi-scan { border-top-color: #16a34a; }
+        .kpi-persen { border-top-color: #0f172a; }
+        .kpi-eb { border-top-color: #f59e0b; }
+        .kpi-comp { border-top-color: #06b6d4; }
+
+        .kpi-label {
+            font-size: 0.8rem;
+            font-weight: 600;
+            color: var(--text-muted);
+            text-transform: uppercase;
+            letter-spacing: 0.4px;
+            margin-bottom: 6px;
+        }
+        .kpi-value {
+            font-size: 1.75rem;
+            font-weight: 800;
+            line-height: 1.1;
+            font-variant-numeric: tabular-nums;
         }
         .table-card {
-            flex: 1;
-            display: flex;
-            flex-direction: column;
+            background: #ffffff;
+            border: 1px solid var(--card-border);
+            border-radius: 12px;
             overflow: hidden;
+            box-shadow: 0 1px 3px rgba(0, 0, 0, 0.04);
         }
-        .table-responsive { 
-            flex: 1;
-            max-height: calc(100vh - 270px); 
-            overflow-y: auto; 
+        .tips-bar {
+            background-color: #f8fafc;
+            border-bottom: 1px solid var(--card-border);
+            padding: 10px 20px;
+            font-size: 0.85rem;
+            color: #475569;
         }
-        .voucher-link { 
-            font-family: monospace; 
-            font-weight: bold; 
-            color: #0d6efd; 
-            font-size: 0.9rem; 
-            cursor: pointer; 
+        .table thead th {
+            background-color: #1e293b;
+            color: #ffffff;
+            font-weight: 600;
+            font-size: 0.85rem;
+            padding: 12px 14px;
+            border: none;
+            white-space: nowrap;
+        }
+        .table tbody td {
+            padding: 11px 14px;
+            vertical-align: middle;
+            font-size: 0.88rem;
+            border-color: #f1f5f9;
+        }
+        .voucher-link {
+            color: #2563eb;
+            font-weight: 600;
+            text-decoration: none;
+            cursor: pointer;
+        }
+        .voucher-link:hover {
             text-decoration: underline;
         }
-        .voucher-link:hover { 
-            color: #0a58ca; 
-            background-color: #e9ecef; 
-            padding: 2px 4px; 
-            border-radius: 4px; 
-        }
+
         @media print {
-            .no-print { display: none !important; }
-            .main-wrapper { padding: 0; display: block; }
-            .table-responsive { max-height: none !important; overflow: visible !important; }
+            body {
+                background-color: #ffffff;
+                padding: 0;
+            }
+            .no-print {
+                display: none !important;
+            }
+            .header-bar, .kpi-card, .table-card {
+                box-shadow: none !important;
+                border: 1px solid #cbd5e1 !important;
+            }
         }
     </style>
 </head>
 <body>
 
-<script>
-    const isAuth = sessionStorage.getItem('auth_FINANCE') === 'true' || 
-                   sessionStorage.getItem('auth_ACC') === 'true' || 
-                   sessionStorage.getItem('auth_ACCOUNTING') === 'true' ||
-                   sessionStorage.getItem('auth_REPORT') === 'true';
-
-    if (!isAuth) {
-        alert('Silakan login terlebih dahulu melalui menu utama!');
-        window.location.href = 'index.html';
-    }
-</script>
-
-<div class="container-fluid main-wrapper">
+<div class="report-container">
     <!-- Header Bar -->
-    <div class="d-flex justify-content-between align-items-center mb-3 no-print">
-        <a href="index.html" class="btn btn-sm btn-outline-secondary">← Kembali ke Menu Utama</a>
-        <h4 class="fw-bold text-dark mb-0">Laporan Rekonsiliasi & Audit Voucher Breakfast</h4>
-        <div>
-            <button onclick="window.print()" class="btn btn-sm btn-dark fw-bold px-3">Cetak Laporan</button>
+    <div class="header-bar d-flex flex-wrap align-items-center justify-content-between gap-2">
+        <a href="index.html" class="btn btn-outline-secondary btn-sm fw-semibold px-3 py-2 no-print">
+            ← Kembali ke Menu Utama
+        </a>
+        <div class="text-center">
+            <h4 class="fw-bold mb-0" style="letter-spacing: -0.3px;">Laporan Rekonsiliasi & Audit Voucher Breakfast</h4>
+            <div class="text-muted small">Aston Tanjungpinang Hotel & Conference Center</div>
         </div>
+        <button onclick="window.print()" class="btn btn-dark btn-sm fw-semibold px-3 py-2 no-print">
+            Cetak Laporan
+        </button>
     </div>
 
-    <!-- Filter Rentang Tanggal & Pencarian Nomor Voucher -->
-    <div class="card p-3 mb-3 shadow-sm no-print">
-        <div class="row g-2 align-items-end">
-            <div class="col-md-3">
-                <label class="form-label fw-bold small mb-1">Dari Tanggal (Start Date)</label>
-                <input type="date" id="startDate" class="form-control form-control-sm">
-            </div>
-            <div class="col-md-3">
-                <label class="form-label fw-bold small mb-1">Sampai Tanggal (End Date)</label>
-                <input type="date" id="endDate" class="form-control form-control-sm">
-            </div>
-            <div class="col-md-2">
-                <button onclick="loadReport()" id="btnFilter" class="btn btn-primary btn-sm w-100 fw-bold">Tampilkan Data</button>
+    <!-- Filter Tanggal (Bersih & Proporsional Tanpa Kolom Cari Voucher) -->
+    <div class="filter-card no-print">
+        <div class="row g-3 align-items-end">
+            <div class="col-md-4">
+                <label class="form-label fw-bold small text-secondary mb-1">Dari Tanggal (Start Date)</label>
+                <input type="date" id="startDateInput" class="form-control">
             </div>
             <div class="col-md-4">
-                <label class="form-label fw-bold small mb-1">Cari Nomor Voucher / Kamar</label>
-                <input type="text" id="searchInput" onkeyup="filterTable()" class="form-control form-control-sm" placeholder="Ketik VCH-xxx atau No. Kamar...">
+                <label class="form-label fw-bold small text-secondary mb-1">Sampai Tanggal (End Date)</label>
+                <input type="date" id="endDateInput" class="form-control">
+            </div>
+            <div class="col-md-4">
+                <button type="button" id="btnLoadReport" onclick="loadReportData()" class="btn btn-primary w-100 fw-bold py-2">
+                    Tampilkan Data
+                </button>
             </div>
         </div>
     </div>
 
-    <!-- Ringkasan Audit (6 KPI Cards sejajar penuh 1 layar) -->
-    <div class="row g-2 mb-3">
-        <div class="col-lg-2 col-md-4 col-6">
-            <div class="card p-2 border-start border-secondary border-4 shadow-sm h-100 bg-white">
-                <small class="text-muted fw-bold">Total Kamar</small>
-                <h4 class="fw-bold mb-0 text-secondary" id="statTotalKamar">0</h4>
+    <!-- 6 Kartu KPI Ringkasan -->
+    <div class="row g-3 mb-3">
+        <div class="col-6 col-md-4 col-lg-2">
+            <div class="kpi-card kpi-kamar">
+                <div class="kpi-label">Total Kamar</div>
+                <div class="kpi-value text-secondary" id="kpiTotalKamar">0</div>
             </div>
         </div>
-        <div class="col-lg-2 col-md-4 col-6">
-            <div class="card p-2 border-start border-primary border-4 shadow-sm h-100 bg-white">
-                <small class="text-muted fw-bold">Total Voucher Terbit</small>
-                <h4 class="fw-bold mb-0 text-primary" id="statTotalVoucher">0</h4>
+        <div class="col-6 col-md-4 col-lg-2">
+            <div class="kpi-card kpi-terbit">
+                <div class="kpi-label">Total Voucher Terbit</div>
+                <div class="kpi-value text-primary" id="kpiTotalVoucher">0</div>
             </div>
         </div>
-        <div class="col-lg-2 col-md-4 col-6">
-            <div class="card p-2 border-start border-success border-4 shadow-sm h-100 bg-white">
-                <small class="text-muted fw-bold">Total Scan Terpakai</small>
-                <h4 class="fw-bold mb-0 text-success" id="statTotalScan">0</h4>
+        <div class="col-6 col-md-4 col-lg-2">
+            <div class="kpi-card kpi-scan">
+                <div class="kpi-label">Total Scan Terpakai</div>
+                <div class="kpi-value text-success" id="kpiTotalScan">0</div>
             </div>
         </div>
-        <div class="col-lg-2 col-md-4 col-6">
-            <div class="card p-2 border-start border-dark border-4 shadow-sm h-100 bg-white">
-                <small class="text-muted fw-bold">Persentase Rekonsiliasi</small>
-                <div class="d-flex align-items-baseline gap-1">
-                    <h4 class="fw-bold mb-0 text-dark" id="statReconPercent">0%</h4>
-                    <small class="text-muted" id="statReconDetail" style="font-size: 0.72rem;">(0/0)</small>
+        <div class="col-6 col-md-4 col-lg-2">
+            <div class="kpi-card kpi-persen">
+                <div class="kpi-label">Persentase Rekonsiliasi</div>
+                <div class="kpi-value text-dark">
+                    <span id="kpiPersentase">0.0%</span>
+                    <small class="text-muted fw-normal" style="font-size: 0.75rem;" id="kpiPersenRatio">(0/0)</small>
                 </div>
             </div>
         </div>
-        <div class="col-lg-2 col-md-4 col-6">
-            <div class="card p-2 border-start border-warning border-4 shadow-sm h-100 bg-white">
-                <small class="text-muted fw-bold">Extra Bed (Paid)</small>
-                <h4 class="fw-bold mb-0 text-warning" id="statEbPaid">0</h4>
+        <div class="col-6 col-md-4 col-lg-2">
+            <div class="kpi-card kpi-eb">
+                <div class="kpi-label">Extra Bed (Paid)</div>
+                <div class="kpi-value text-warning" id="kpiEbPaid">0</div>
             </div>
         </div>
-        <div class="col-lg-2 col-md-4 col-6">
-            <div class="card p-2 border-start border-info border-4 shadow-sm h-100 bg-white">
-                <small class="text-muted fw-bold">Extra Bed (Compliment)</small>
-                <h4 class="fw-bold mb-0 text-info" id="statEbComp">0</h4>
+        <div class="col-6 col-md-4 col-lg-2">
+            <div class="kpi-card kpi-comp">
+                <div class="kpi-label">Compliment</div>
+                <div class="kpi-value text-info" id="kpiCompliment">0</div>
             </div>
         </div>
     </div>
 
-    <!-- Tabel Data Audit & Nomor Voucher (Full Height) -->
-    <div class="card shadow-sm table-card">
-        <div class="card-header bg-white py-2 d-flex justify-content-between align-items-center no-print">
-            <span class="small text-muted">💡 <strong>Tips Audit:</strong> Klik pada <strong>Nomor Voucher (ID)</strong> untuk melihat detail lengkap data voucher (Display Only).</span>
+    <!-- Tabel Data Audit -->
+    <div class="table-card">
+        <div class="tips-bar no-print">
+            <strong>Tips Audit:</strong> Klik pada <strong>Nomor Voucher (ID)</strong> untuk melihat detail lengkap data voucher & catatan audit.
         </div>
-        <div class="card-body p-0 d-flex flex-column" style="overflow: hidden;">
-            <div class="table-responsive">
-                <table class="table table-hover table-bordered align-middle mb-0" id="reportTable" style="font-size: 0.88rem;">
-                    <thead class="table-dark sticky-top">
-                        <tr>
-                            <th>No</th>
-                            <th>Nomor Voucher (ID)</th>
-                            <th>Kamar</th>
-                            <th>Pax</th>
-                            <th>Check-in</th>
-                            <th>Check-out</th>
-                            <th>Kategori</th>
-                            <th>Status</th>
-                            <th>Jml Scan</th>
-                            <th>Riwayat Waktu Scan</th>
-                        </tr>
-                    </thead>
-                    <tbody id="reportTableBody">
-                        <tr>
-                            <td colspan="10" class="text-center py-4 text-muted">Memuat data laporan...</td>
-                        </tr>
-                    </tbody>
-                </table>
-            </div>
+        <div class="table-responsive" style="max-height: 560px;">
+            <table class="table table-hover mb-0">
+                <thead class="sticky-top">
+                    <tr>
+                        <th style="width: 50px;">No</th>
+                        <th>Nomor Voucher (ID)</th>
+                        <th>Kamar</th>
+                        <th>Pax</th>
+                        <th>Check-in</th>
+                        <th>Check-out</th>
+                        <th>Kategori</th>
+                        <th>Status</th>
+                        <th>Jml Scan</th>
+                        <th>Riwayat Waktu Scan</th>
+                    </tr>
+                </thead>
+                <tbody id="reportTableBody">
+                    <tr>
+                        <td colspan="10" class="text-center text-muted py-4">Memuat data laporan...</td>
+                    </tr>
+                </tbody>
+            </table>
         </div>
     </div>
 </div>
 
-<!-- Modal Display-Only Detail Voucher -->
-<div class="modal fade" id="voucherDetailModal" tabindex="-1" aria-hidden="true">
+<!-- Modal Detail Voucher (Display Only) -->
+<div class="modal fade" id="detailModal" tabindex="-1" aria-hidden="true">
     <div class="modal-dialog modal-dialog-centered">
         <div class="modal-content border-0 shadow">
             <div class="modal-header bg-dark text-white">
-                <h6 class="modal-title fw-bold">Detail Data Voucher (Display Only)</h6>
+                <h6 class="modal-title fw-bold">Detail Audit Voucher</h6>
                 <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
             </div>
-            <div class="modal-body">
-                <div class="alert alert-light border text-center mb-3 py-2">
-                    <small class="text-muted d-block">KODE / NOMOR VOUCHER</small>
-                    <span class="fs-5 fw-bold text-primary font-monospace" id="modalVoucherId">-</span>
-                </div>
-                <table class="table table-sm table-bordered mb-3" style="font-size: 0.9rem;">
-                    <tbody>
-                        <tr>
-                            <th class="bg-light w-40">Nomor Kamar</th>
-                            <td class="fw-bold" id="modalNoKamar">-</td>
-                        </tr>
-                        <tr>
-                            <th class="bg-light">Jumlah Pax</th>
-                            <td id="modalPax">-</td>
-                        </tr>
-                        <tr>
-                            <th class="bg-light">Tanggal Check-in</th>
-                            <td id="modalCheckin">-</td>
-                        </tr>
-                        <tr>
-                            <th class="bg-light">Tanggal Check-out</th>
-                            <td id="modalCheckout">-</td>
-                        </tr>
-                        <tr>
-                            <th class="bg-light">Masa Berlaku Sarapan</th>
-                            <td class="fw-bold text-success" id="modalValidPeriod">-</td>
-                        </tr>
-                        <tr>
-                            <th class="bg-light">Kategori</th>
-                            <td id="modalKategori">-</td>
-                        </tr>
-                        <tr>
-                            <th class="bg-light">Status Sistem</th>
-                            <td id="modalStatus">-</td>
-                        </tr>
-                        <tr>
-                            <th class="bg-light">Total Pemakaian</th>
-                            <td class="fw-bold" id="modalTotalScan">-</td>
-                        </tr>
-                    </tbody>
-                </table>
-                <div>
-                    <label class="form-label fw-bold small text-muted mb-1">Log Riwayat Scan di Restoran:</label>
-                    <div class="p-2 bg-light border rounded small font-monospace" id="modalHistoryScan" style="min-height: 45px;">-</div>
-                </div>
-            </div>
-            <div class="modal-footer bg-light py-2">
-                <span class="text-muted small me-auto">Mode Baca Saja (Read-Only)</span>
+            <div class="modal-body" id="detailModalBody"></div>
+            <div class="modal-footer">
                 <button type="button" class="btn btn-secondary btn-sm" data-bs-dismiss="modal">Tutup</button>
             </div>
         </div>
@@ -237,183 +255,187 @@
 <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
 <script>
     const API_URL = "https://script.google.com/macros/s/AKfycbxAkG5RZ5-iTyU0ArzK15n_YkjnQCgUkmLtcl6iETq7lPtT0oZN1Y7w5NbGaRHgPpYxfQ/exec";
-    let currentReportData = [];
-    let detailModalInstance = null;
+    let currentReportRows = [];
 
     window.onload = function() {
-        detailModalInstance = new bootstrap.Modal(document.getElementById('voucherDetailModal'));
-
         const now = new Date();
-        const year = now.getFullYear();
-        const month = String(now.getMonth() + 1).padStart(2, '0');
-        const lastDay = new Date(year, now.getMonth() + 1, 0).getDate();
+        const yyyy = now.getFullYear();
+        const mm = String(now.getMonth() + 1).padStart(2, '0');
+        const firstDay = `${yyyy}-${mm}-01`;
+        const lastDayDate = new Date(yyyy, now.getMonth() + 1, 0);
+        const lastDay = `${yyyy}-${mm}-${String(lastDayDate.getDate()).padStart(2, '0')}`;
 
-        document.getElementById('startDate').value = `${year}-${month}-01`;
-        document.getElementById('endDate').value = `${year}-${month}-${String(lastDay).padStart(2, '0')}`;
-        
-        loadReport();
+        document.getElementById('startDateInput').value = firstDay;
+        document.getElementById('endDateInput').value = lastDay;
+
+        loadReportData();
     };
 
-    function loadReport() {
-        const btn = document.getElementById('btnFilter');
+    function loadReportData() {
+        const startDate = document.getElementById('startDateInput').value;
+        const endDate = document.getElementById('endDateInput').value;
+
+        if (!startDate || !endDate) {
+            alert("Silakan pilih rentang tanggal terlebih dahulu!");
+            return;
+        }
+
+        const btn = document.getElementById('btnLoadReport');
         btn.disabled = true;
-        btn.innerText = "Memuat...";
+        btn.innerText = "Memuat Data...";
 
-        const startDate = document.getElementById('startDate').value;
-        const endDate = document.getElementById('endDate').value;
+        const tbody = document.getElementById('reportTableBody');
+        tbody.innerHTML = `<tr><td colspan="10" class="text-center text-muted py-4">Sedang mengambil data dari server...</td></tr>`;
 
-        const script = document.createElement('script');
-        script.src = `${API_URL}?action=report&startDate=${startDate}&endDate=${endDate}&callback=onReportLoaded`;
-        script.onerror = function() {
-            alert("Gagal mengambil data laporan dari server.");
+        const cbName = "cbReport_" + Date.now();
+        window[cbName] = function(res) {
+            delete window[cbName];
             btn.disabled = false;
             btn.innerText = "Tampilkan Data";
+
+            if (res && res.result === "success") {
+                currentReportRows = res.data || [];
+                renderReport(currentReportRows);
+            } else {
+                tbody.innerHTML = `<tr><td colspan="10" class="text-center text-danger py-4">${res ? res.message : "Gagal memuat laporan."}</td></tr>`;
+            }
+        };
+
+        const script = document.createElement('script');
+        script.src = `${API_URL}?action=report&startDate=${encodeURIComponent(startDate)}&endDate=${encodeURIComponent(endDate)}&callback=${cbName}`;
+        script.onerror = function() {
+            delete window[cbName];
+            btn.disabled = false;
+            btn.innerText = "Tampilkan Data";
+            tbody.innerHTML = `<tr><td colspan="10" class="text-center text-danger py-4">Gagal terhubung ke server!</td></tr>`;
         };
         document.body.appendChild(script);
-        script.onload = () => document.body.removeChild(script);
+        script.onload = () => script.remove();
     }
 
-    window.onReportLoaded = function(res) {
-        const btn = document.getElementById('btnFilter');
-        btn.disabled = false;
-        btn.innerText = "Tampilkan Data";
+    function hitungMalam(checkinStr, checkoutStr) {
+        if (!checkinStr || !checkoutStr) return 1;
+        const d1 = new Date(checkinStr + "T00:00:00");
+        const d2 = new Date(checkoutStr + "T00:00:00");
+        const diff = Math.round((d2 - d1) / (1000 * 60 * 60 * 24));
+        return diff > 0 ? diff : 1;
+    }
 
-        if (res.result !== 'success') {
-            alert(res.message || "Terjadi kesalahan saat memuat laporan.");
+    function renderReport(rows) {
+        const tbody = document.getElementById('reportTableBody');
+
+        if (!rows || rows.length === 0) {
+            tbody.innerHTML = `<tr><td colspan="10" class="text-center text-muted py-4">Tidak ada data voucher pada rentang tanggal ini.</td></tr>`;
+            updateKPI(0, 0, 0, 0, 0, 0);
             return;
         }
 
-        currentReportData = res.data || [];
-        renderTable(currentReportData);
-    };
-
-    function calculateExpectedEntitlement(item, filterStart, filterEnd) {
-        const cIn = new Date(item.tglCheckin + "T00:00:00");
-        cIn.setDate(cIn.getDate() + 1);
-        const cOut = new Date(item.tglCheckout + "T00:00:00");
-
-        let effectiveStart = cIn;
-        let effectiveEnd = cOut;
-
-        if (filterStart) {
-            const fStart = new Date(filterStart + "T00:00:00");
-            if (fStart > effectiveStart) effectiveStart = fStart;
-        }
-        if (filterEnd) {
-            const fEnd = new Date(filterEnd + "T00:00:00");
-            if (fEnd < effectiveEnd) effectiveEnd = fEnd;
-        }
-
-        if (effectiveEnd < effectiveStart) return 0;
-        const diffDays = Math.round((effectiveEnd - effectiveStart) / (1000 * 3600 * 24)) + 1;
-        return diffDays * parseInt(item.pax || 1);
-    }
-
-    function renderTable(data) {
-        const tbody = document.getElementById('reportTableBody');
-        tbody.innerHTML = "";
-
-        const startDate = document.getElementById('startDate').value;
-        const endDate = document.getElementById('endDate').value;
-
-        // Menghitung jumlah kamar unik yang menerima voucher
         const uniqueRooms = new Set();
-        let totalVoucher = data.length;
-        let totalScan = 0;
-        let totalEntitlement = 0;
-        let ebPaid = 0;
-        let ebComp = 0;
+        let totalVoucherValid = 0;
+        let totalScanTerpakai = 0;
+        let totalPotensiScan = 0;
+        let totalEbPaid = 0;
+        let totalCompliment = 0;
 
-        if (data.length === 0) {
-            tbody.innerHTML = `<tr><td colspan="10" class="text-center py-4 text-muted">Tidak ada data voucher pada rentang tanggal ini.</td></tr>`;
-        } else {
-            data.forEach((item, index) => {
-                if (item.noKamar) {
-                    uniqueRooms.add(item.noKamar.toString().trim());
+        let html = "";
+
+        rows.forEach((row, idx) => {
+            const isVoid = (row.status === "VOID");
+            const paxNum = parseInt(row.pax || "1", 10);
+            const scanNum = parseInt(row.totalScan || "0", 10);
+            const nights = hitungMalam(row.tglCheckin, row.tglCheckout);
+
+            if (!isVoid) {
+                if (row.noKamar) uniqueRooms.add(row.noKamar);
+                totalVoucherValid++;
+                totalScanTerpakai += scanNum;
+                totalPotensiScan += (paxNum * nights);
+            }
+
+            // Pengelompokan Kategori (Semua jenis compliment masuk ke kelompok Compliment)
+            let katBadge = `<span class="badge bg-secondary">Regular</span>`;
+            if (row.ebType === "paid") {
+                katBadge = `<span class="badge bg-warning text-dark">EB Paid</span>`;
+                if (!isVoid) totalEbPaid++;
+            } else if (row.ebType === "compliment" || row.ebType === "comp_pax" || row.ebType === "compliment_all") {
+                katBadge = `<span class="badge bg-info text-dark">Compliment</span>`;
+                if (!isVoid) totalCompliment++;
+            }
+
+            // Pengelompokan Status (termasuk VOID + alasan pembatalan)
+            let statusBadge = `<span class="badge bg-success">${row.status}</span>`;
+            if (row.status === "REDEEMED") {
+                statusBadge = `<span class="badge bg-primary">REDEEMED</span>`;
+            } else if (row.status === "EXPIRED") {
+                statusBadge = `<span class="badge bg-dark">EXPIRED</span>`;
+            } else if (row.status === "VOID") {
+                statusBadge = `<span class="badge bg-danger">VOID</span>`;
+                if (row.note) {
+                    statusBadge += `<div class="text-danger small mt-1" style="font-size: 0.72rem; max-width: 180px; white-space: normal;">${row.note}</div>`;
                 }
+            }
 
-                totalScan += parseInt(item.totalScan || 0);
-                totalEntitlement += calculateExpectedEntitlement(item, startDate, endDate);
+            const rowClass = isVoid ? "table-danger bg-opacity-10" : "";
 
-                if (item.ebType === 'paid') ebPaid++;
-                if (item.ebType === 'compliment') ebComp++;
+            html += `
+                <tr class="${rowClass}">
+                    <td>${idx + 1}</td>
+                    <td><span class="voucher-link" onclick="showVoucherDetail(${idx})">${row.voucherId}</span></td>
+                    <td class="fw-bold">${row.noKamar}</td>
+                    <td>${paxNum}</td>
+                    <td>${row.tglCheckin}</td>
+                    <td>${row.tglCheckout}</td>
+                    <td>${katBadge}</td>
+                    <td>${statusBadge}</td>
+                    <td class="fw-bold">${scanNum}x</td>
+                    <td class="text-muted small">${row.historyScan || '-'}</td>
+                </tr>
+            `;
+        });
 
-                let badgeCat = '<span class="badge bg-secondary">Regular</span>';
-                if (item.ebType === 'paid') badgeCat = '<span class="badge bg-warning text-dark">EB Paid</span>';
-                if (item.ebType === 'compliment') badgeCat = '<span class="badge bg-info text-dark">EB Compliment</span>';
-
-                let badgeStatus = `<span class="badge bg-success">${item.status}</span>`;
-                if (item.status === 'REDEEMED') badgeStatus = `<span class="badge bg-primary">REDEEMED</span>`;
-                if (item.status === 'EXPIRED') badgeStatus = `<span class="badge bg-danger">EXPIRED</span>`;
-
-                const tr = document.createElement('tr');
-                tr.innerHTML = `
-                    <td>${index + 1}</td>
-                    <td><span class="voucher-link" onclick="showVoucherDetail('${item.voucherId}')" title="Klik untuk melihat detail voucher">${item.voucherId}</span></td>
-                    <td class="fw-bold">${item.noKamar}</td>
-                    <td>${item.pax}</td>
-                    <td>${item.tglCheckin}</td>
-                    <td>${item.tglCheckout}</td>
-                    <td>${badgeCat}</td>
-                    <td>${badgeStatus}</td>
-                    <td class="fw-bold text-center">${item.totalScan}x</td>
-                    <td class="small text-muted">${item.historyScan || '-'}</td>
-                `;
-                tbody.appendChild(tr);
-            });
-        }
-
-        let reconPercent = 0;
-        if (totalEntitlement > 0) {
-            reconPercent = ((totalScan / totalEntitlement) * 100).toFixed(1);
-        }
-
-        document.getElementById('statTotalKamar').innerText = uniqueRooms.size;
-        document.getElementById('statTotalVoucher').innerText = totalVoucher;
-        document.getElementById('statTotalScan').innerText = totalScan;
-        document.getElementById('statReconPercent').innerText = `${reconPercent}%`;
-        document.getElementById('statReconDetail').innerText = `(${totalScan}/${totalEntitlement})`;
-        document.getElementById('statEbPaid').innerText = ebPaid;
-        document.getElementById('statEbComp').innerText = ebComp;
+        tbody.innerHTML = html;
+        updateKPI(uniqueRooms.size, totalVoucherValid, totalScanTerpakai, totalPotensiScan, totalEbPaid, totalCompliment);
     }
 
-    function showVoucherDetail(voucherId) {
-        const item = currentReportData.find(v => v.voucherId === voucherId);
+    function updateKPI(kamar, terbit, scan, potensi, ebPaid, compliment) {
+        document.getElementById('kpiTotalKamar').innerText = kamar;
+        document.getElementById('kpiTotalVoucher').innerText = terbit;
+        document.getElementById('kpiTotalScan').innerText = scan;
+        document.getElementById('kpiEbPaid').innerText = ebPaid;
+        document.getElementById('kpiCompliment').innerText = compliment;
+
+        const persen = potensi > 0 ? ((scan / potensi) * 100).toFixed(1) : "0.0";
+        document.getElementById('kpiPersentase').innerText = `${persen}%`;
+        document.getElementById('kpiPersenRatio').innerText = `(${scan}/${potensi})`;
+    }
+
+    function showVoucherDetail(index) {
+        const item = currentReportRows[index];
         if (!item) return;
 
-        const cIn = new Date(item.tglCheckin + "T00:00:00");
-        cIn.setDate(cIn.getDate() + 1);
-        const startBreakfast = cIn.toISOString().split('T')[0];
-
-        let catLabel = "Regular";
-        if (item.ebType === 'paid') catLabel = "Extra Bed (Paid)";
-        if (item.ebType === 'compliment') catLabel = "Extra Bed (Compliment)";
-
-        document.getElementById('modalVoucherId').innerText = item.voucherId;
-        document.getElementById('modalNoKamar').innerText = item.noKamar;
-        document.getElementById('modalPax').innerText = `${item.pax} Pax`;
-        document.getElementById('modalCheckin').innerText = item.tglCheckin;
-        document.getElementById('modalCheckout').innerText = item.tglCheckout;
-        document.getElementById('modalValidPeriod').innerText = `${startBreakfast} s/d ${item.tglCheckout}`;
-        document.getElementById('modalKategori').innerText = catLabel;
-        document.getElementById('modalStatus').innerText = item.status;
-        document.getElementById('modalTotalScan').innerText = `${item.totalScan}x Scan`;
-        document.getElementById('modalHistoryScan').innerText = item.historyScan ? item.historyScan.split(" | ").join("\n") : "Belum pernah digunakan / belum di-scan.";
-
-        detailModalInstance.show();
-    }
-
-    function filterTable() {
-        const keyword = document.getElementById('searchInput').value.toLowerCase().trim();
-        if (!keyword) {
-            renderTable(currentReportData);
-            return;
+        let katLabel = "Regular";
+        if (item.ebType === "paid") katLabel = "Extra Bed (Paid)";
+        if (item.ebType === "compliment" || item.ebType === "comp_pax" || item.ebType === "compliment_all") {
+            katLabel = "Compliment";
         }
-        const filtered = currentReportData.filter(item => 
-            item.voucherId.toLowerCase().includes(keyword) || 
-            item.noKamar.toLowerCase().includes(keyword)
-        );
-        renderTable(filtered);
+
+        document.getElementById('detailModalBody').innerHTML = `
+            <table class="table table-sm table-bordered mb-0">
+                <tr><th style="width: 38%;">Nomor Voucher</th><td class="fw-bold text-primary">${item.voucherId}</td></tr>
+                <tr><th>Nomor Kamar</th><td class="fw-bold">${item.noKamar}</td></tr>
+                <tr><th>Jumlah Pax</th><td>${item.pax} Pax</td></tr>
+                <tr><th>Check-in</th><td>${item.tglCheckin}</td></tr>
+                <tr><th>Check-out</th><td>${item.tglCheckout}</td></tr>
+                <tr><th>Kategori</th><td>${katLabel}</td></tr>
+                <tr><th>Status</th><td class="fw-bold">${item.status}</td></tr>
+                <tr><th>Total Scan</th><td>${item.totalScan}x</td></tr>
+                <tr><th>Riwayat Scan</th><td>${item.historyScan || '-'}</td></tr>
+                <tr><th>Catatan / Audit Note</th><td class="text-danger">${item.note || '-'}</td></tr>
+            </table>
+        `;
+
+        const modal = new bootstrap.Modal(document.getElementById('detailModal'));
+        modal.show();
     }
 </script>
 </body>
