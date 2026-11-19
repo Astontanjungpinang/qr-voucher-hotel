@@ -213,13 +213,13 @@
             </div>
         </div>
         <div class="col-6 col-md-4 col-lg-2">
-         <div class="kpi-card kpi-persen">
-             <div class="kpi-label">Persentase Rekonsiliasi</div>
-             <div class="kpi-value text-dark">
-                 <span id="kpiPersentase">0.0%</span>
-             </div>
-         </div>
-     </div>
+            <div class="kpi-card kpi-persen">
+                <div class="kpi-label">Persentase Rekonsiliasi</div>
+                <div class="kpi-value text-dark">
+                    <span id="kpiPersentase">0.0%</span>
+                </div>
+            </div>
+        </div>
         <div class="col-6 col-md-4 col-lg-2">
             <div class="kpi-card kpi-eb">
                 <div class="kpi-label">Extra Bed (Paid)</div>
@@ -303,19 +303,22 @@
 
 <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
 <script>
-    const API_URL = "https://script.google.com/macros/s/AKfycbwl_b1nBX-1pqJhp4COKNAX_L4v6MLh1jI76nhouVp9dFiONF9RijKC4DjX8p-GDkpSig/exec";
+    const API_URL = "https://script.google.com/macros/s/AKfycbx77_uvKwZvSpWVEAIY17D2ViWkt4n0dfUNv1fAG5p3sa6RLLGVuY0XtjzkuNQ9s7R-ZQ/exec";
     let currentReportRows = [];
 
-    window.onload = function() {
+    function getTodayLocalStr() {
         const now = new Date();
         const yyyy = now.getFullYear();
         const mm = String(now.getMonth() + 1).padStart(2, '0');
-        const firstDay = `${yyyy}-${mm}-01`;
-        const lastDayDate = new Date(yyyy, now.getMonth() + 1, 0);
-        const lastDay = `${yyyy}-${mm}-${String(lastDayDate.getDate()).padStart(2, '0')}`;
+        const dd = String(now.getDate()).padStart(2, '0');
+        return `${yyyy}-${mm}-${dd}`;
+    }
 
-        document.getElementById('startDateInput').value = firstDay;
-        document.getElementById('endDateInput').value = lastDay;
+    window.onload = function() {
+        // Default otomatis ke tanggal hari ini agar langsung sinkron dengan Daily Reconcile Resto
+        const todayStr = getTodayLocalStr();
+        document.getElementById('startDateInput').value = todayStr;
+        document.getElementById('endDateInput').value = todayStr;
 
         loadReportData();
     };
@@ -343,10 +346,20 @@
             btn.innerText = "Tampilkan Data Rekonsiliasi";
 
             if (res && res.result === "success") {
-                currentReportRows = res.data || [];
+                const rawRows = res.data || [];
+                // Filter hanya voucher yang memiliki hak sarapan di dalam rentang tanggal laporan
+                // (Tanggal sarapan dimulai H+1 dari Check-in sampai tanggal Check-out)
+                currentReportRows = rawRows.filter(row => {
+                    if (!row.tglCheckin || !row.tglCheckout) return false;
+                    const cIn = new Date(row.tglCheckin + "T00:00:00");
+                    cIn.setDate(cIn.getDate() + 1);
+                    const firstBreakfast = `${cIn.getFullYear()}-${String(cIn.getMonth() + 1).padStart(2, '0')}-${String(cIn.getDate()).padStart(2, '0')}`;
+                    return row.tglCheckout >= startDate && firstBreakfast <= endDate;
+                });
+
                 const nowTime = new Date().toLocaleTimeString('id-ID', { hour: '2-digit', minute: '2-digit' });
                 document.getElementById('lastSyncLabel').innerText = `Terakhir diperbarui: ${nowTime} WIB`;
-                renderReport(currentReportRows);
+                renderReport(currentReportRows, startDate, endDate);
             } else {
                 tbody.innerHTML = `<tr><td colspan="11" class="text-center text-danger py-4">${res ? res.message : "Gagal memuat laporan."}</td></tr>`;
             }
@@ -364,19 +377,28 @@
         script.onload = () => script.remove();
     }
 
-    function hitungMalam(checkinStr, checkoutStr) {
+    // Hitung jumlah hari hak sarapan yang jatuh tepat di dalam periode laporan [startDate .. endDate]
+    function hitungHariSarapanDalamPeriode(checkinStr, checkoutStr, startDate, endDate) {
         if (!checkinStr || !checkoutStr) return 1;
-        const d1 = new Date(checkinStr + "T00:00:00");
-        const d2 = new Date(checkoutStr + "T00:00:00");
-        const diff = Math.round((d2 - d1) / (1000 * 60 * 60 * 24));
-        return diff > 0 ? diff : 1;
+        const firstBf = new Date(checkinStr + "T00:00:00");
+        firstBf.setDate(firstBf.getDate() + 1);
+        const lastBf = new Date(checkoutStr + "T00:00:00");
+
+        const repStart = new Date(startDate + "T00:00:00");
+        const repEnd = new Date(endDate + "T00:00:00");
+
+        const effectiveStart = firstBf > repStart ? firstBf : repStart;
+        const effectiveEnd = lastBf < repEnd ? lastBf : repEnd;
+
+        const diff = Math.round((effectiveEnd - effectiveStart) / (1000 * 60 * 60 * 24)) + 1;
+        return diff > 0 ? diff : 0;
     }
 
-    function renderReport(rows) {
+    function renderReport(rows, startDate, endDate) {
         const tbody = document.getElementById('reportTableBody');
 
         if (!rows || rows.length === 0) {
-            tbody.innerHTML = `<tr><td colspan="11" class="text-center text-muted py-4">Tidak ada data voucher pada rentang tanggal ini.</td></tr>`;
+            tbody.innerHTML = `<tr><td colspan="11" class="text-center text-muted py-4">Tidak ada data hak sarapan pada rentang tanggal ini.</td></tr>`;
             updateKPI(0, 0, 0, 0, 0, 0);
             return;
         }
@@ -394,13 +416,13 @@
             const isVoid = (row.status === "VOID");
             const paxNum = parseInt(row.pax || "1", 10);
             const scanNum = parseInt(row.totalScan || "0", 10);
-            const nights = hitungMalam(row.tglCheckin, row.tglCheckout);
+            const activeBreakfastDays = hitungHariSarapanDalamPeriode(row.tglCheckin, row.tglCheckout, startDate, endDate);
 
             if (!isVoid) {
                 if (row.noKamar) uniqueRooms.add(row.noKamar);
                 totalVoucherValid++;
                 totalScanTerpakai += scanNum;
-                totalPotensiScan += (paxNum * nights);
+                totalPotensiScan += (paxNum * activeBreakfastDays);
             }
 
             let katBadge = `<span class="badge bg-secondary">Regular</span>`;
@@ -452,15 +474,15 @@
     }
 
     function updateKPI(kamar, terbit, scan, potensi, ebPaid, compliment) {
-     document.getElementById('kpiTotalKamar').innerText = kamar;
-     document.getElementById('kpiTotalVoucher').innerText = terbit;
-     document.getElementById('kpiTotalScan').innerText = scan;
-     document.getElementById('kpiEbPaid').innerText = ebPaid;
-     document.getElementById('kpiCompliment').innerText = compliment;
+        document.getElementById('kpiTotalKamar').innerText = kamar;
+        document.getElementById('kpiTotalVoucher').innerText = terbit;
+        document.getElementById('kpiTotalScan').innerText = scan;
+        document.getElementById('kpiEbPaid').innerText = ebPaid;
+        document.getElementById('kpiCompliment').innerText = compliment;
 
-     const persen = potensi > 0 ? ((scan / potensi) * 100).toFixed(1) : "0.0";
-     document.getElementById('kpiPersentase').innerText = `${persen}%`;
- }
+        const persen = potensi > 0 ? ((scan / potensi) * 100).toFixed(1) : "0.0";
+        document.getElementById('kpiPersentase').innerText = `${persen}%`;
+    }
 
     function showVoucherDetail(index) {
         const item = currentReportRows[index];
