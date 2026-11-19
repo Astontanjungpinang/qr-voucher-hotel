@@ -446,10 +446,6 @@
                 labelKategori = `<div style="font-size: 9.5px; font-weight: bold; margin-top: 1px;">[COMPLIMENT]</div>`;
             }
 
-            const resvText = (item.noReservasi && item.noReservasi !== "-")
-                ? `<div style="font-size: 9px;">Resv: <strong>${item.noReservasi}</strong></div>`
-                : "";
-
             const cIn = new Date(item.tglCheckin + "T00:00:00");
             cIn.setDate(cIn.getDate() + 1);
             const startBreakfast = cIn.toISOString().split('T')[0];
@@ -463,10 +459,6 @@
                     <div class="d-flex justify-content-between px-1 mt-1" style="font-size: 10.5px;">
                         <span>Kamar: <strong>${item.noKamar}</strong></span>
                         <span>Pax: <strong>1 Pax</strong></span>
-                    </div>
-                    ${resvText}
-                    <div style="font-size: 9.5px; margin-bottom: 2px;">
-                        Berlaku: <strong>${startBreakfast} s/d ${item.tglCheckout}</strong>
                     </div>
                     
                     <div class="qr-box-wrapper">
