@@ -452,16 +452,15 @@
     }
 
     function updateKPI(kamar, terbit, scan, potensi, ebPaid, compliment) {
-        document.getElementById('kpiTotalKamar').innerText = kamar;
-        document.getElementById('kpiTotalVoucher').innerText = terbit;
-        document.getElementById('kpiTotalScan').innerText = scan;
-        document.getElementById('kpiEbPaid').innerText = ebPaid;
-        document.getElementById('kpiCompliment').innerText = compliment;
+     document.getElementById('kpiTotalKamar').innerText = kamar;
+     document.getElementById('kpiTotalVoucher').innerText = terbit;
+     document.getElementById('kpiTotalScan').innerText = scan;
+     document.getElementById('kpiEbPaid').innerText = ebPaid;
+     document.getElementById('kpiCompliment').innerText = compliment;
 
-        const persen = potensi > 0 ? ((scan / potensi) * 100).toFixed(1) : "0.0";
-        document.getElementById('kpiPersentase').innerText = `${persen}%`;
-        document.getElementById('kpiPersenRatio').innerText = `(${scan}/${potensi})`;
-    }
+     const persen = potensi > 0 ? ((scan / potensi) * 100).toFixed(1) : "0.0";
+     document.getElementById('kpiPersentase').innerText = `${persen}%`;
+ }
 
     function showVoucherDetail(index) {
         const item = currentReportRows[index];
