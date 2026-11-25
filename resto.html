@@ -211,13 +211,13 @@
 </script>
 
 <!-- ======================================================================= -->
-<!-- LAYAR PIN PRIBADI STAF RESTORAN (OPSI 2)                                -->
+<!-- LAYAR PIN PRIBADI STAF RESTORAN (AUTO-SAVE DI PERANGKAT)                -->
 <!-- ======================================================================= -->
 <div id="pinLockOverlay" class="pin-lock-overlay no-print">
     <div class="pin-card shadow-lg">
         <div class="badge bg-primary mb-2 px-3 py-1">IDENTITAS PETUGAS SCAN</div>
         <h5 class="fw-bold mb-1">Masukkan PIN Staf</h5>
-        <p class="text-secondary small mb-3">Setiap hasil scan akan tercatat otomatis atas nama Anda.</p>
+        <p class="text-secondary small mb-3">PIN akan tersimpan otomatis di perangkat ini setelah berhasil login.</p>
 
         <form onsubmit="verifyStaffPin(event)">
             <input type="password" inputmode="numeric" maxlength="6" id="staffPinInput" class="form-control form-control-lg pin-input mb-3" placeholder="••••" required>
@@ -345,6 +345,7 @@
         <div>
             <span class="text-secondary">Petugas Scan:</span>
             <strong class="text-info ms-1" id="activeStaffLabel">-</strong>
+            <span class="badge bg-success ms-1" style="font-size: 0.65rem;">Tersimpan</span>
         </div>
         <div class="d-flex gap-2">
             <button type="button" onclick="openAdminStaffModal()" class="btn btn-outline-info btn-sm py-0 px-2" style="font-size: 0.78rem;">
@@ -507,12 +508,15 @@
 
 <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
 <script>
-    const API_URL = "https://script.google.com/macros/s/AKfycbxUb1N1rq4YMOCRK4X4ruq58149BPGWAh_Hz_PywjGFEz9bAL8h6yS2dxUouF5i5_LN3g/exec";
+    const API_URL = "https://script.google.com/macros/s/AKfycbyrQNujdmJygw4BpazgrqNH-_MEALzKOnUVHlRJ0Td5NN31rNWZ1FH0vsIX7RxPaL9Ceg/exec";
 
     let html5QrCode = null;
     let isScanningLocked = false;
     let dailyRowsCache = [];
-    let currentStaffName = sessionStorage.getItem('resto_staff_name') || "";
+
+    // Ambil sesi tersimpan permanen di perangkat (localStorage)
+    let currentStaffName = localStorage.getItem('resto_saved_staff_name') || "";
+    let currentStaffPin = localStorage.getItem('resto_saved_staff_pin') || "";
     let verifiedAdminPass = "";
 
     function getTodayLocalStr() {
@@ -526,32 +530,66 @@
     window.onload = function() {
         document.getElementById('reconDateInput').value = getTodayLocalStr();
 
-        if (!currentStaffName) {
+        if (!currentStaffName || !currentStaffPin) {
             showPinLock();
         } else {
             document.getElementById('activeStaffLabel').innerText = currentStaffName;
             startCameraScanner();
+            revalidateSavedPinSilently(currentStaffPin);
         }
     };
 
     // =========================================================================
-    // LOGIKA PIN PRIBADI PER STAF (OPSI 2)
+    // LOGIKA AUTO-SAVE PIN PER STAF (LOCALSTORAGE)
     // =========================================================================
-    function showPinLock() {
+    function revalidateSavedPinSilently(savedPin) {
+        const cbName = "cbSilentPin_" + Date.now();
+        window[cbName] = function(res) {
+            delete window[cbName];
+            if (res && res.result === "success" && res.staffName) {
+                currentStaffName = res.staffName;
+                localStorage.setItem('resto_saved_staff_name', currentStaffName);
+                document.getElementById('activeStaffLabel').innerText = currentStaffName;
+            } else if (res && res.result === "error") {
+                // Jika PIN dihapus/dinonaktifkan oleh Super Admin, hapus simpanan & kunci layar
+                clearSavedStaffSession();
+                showPinLock("PIN tersimpan Anda sudah dinonaktifkan oleh Admin. Silakan masukkan PIN baru.");
+            }
+        };
+
+        const script = document.createElement('script');
+        script.src = `${API_URL}?action=verifyStaff&pin=${encodeURIComponent(savedPin)}&callback=${cbName}`;
+        document.body.appendChild(script);
+        script.onload = () => script.remove();
+    }
+
+    function clearSavedStaffSession() {
+        localStorage.removeItem('resto_saved_staff_name');
+        localStorage.removeItem('resto_saved_staff_pin');
+        currentStaffName = "";
+        currentStaffPin = "";
+    }
+
+    function showPinLock(customWarningMsg) {
         if (html5QrCode && html5QrCode.isScanning) {
             try {
                 html5QrCode.pause(true);
             } catch (e) {}
         }
-        document.getElementById('pinErrorMsg').style.display = "none";
+        const errBox = document.getElementById('pinErrorMsg');
+        if (customWarningMsg) {
+            errBox.innerText = customWarningMsg;
+            errBox.style.display = "block";
+        } else {
+            errBox.style.display = "none";
+        }
         document.getElementById('staffPinInput').value = "";
         document.getElementById('pinLockOverlay').style.display = "flex";
         setTimeout(() => document.getElementById('staffPinInput').focus(), 100);
     }
 
     function switchStaffPrompt() {
-        sessionStorage.removeItem('resto_staff_name');
-        currentStaffName = "";
+        clearSavedStaffSession();
         showPinLock();
     }
 
@@ -563,7 +601,7 @@
         const btn = document.getElementById('btnVerifyPin');
         const errBox = document.getElementById('pinErrorMsg');
         btn.disabled = true;
-        btn.innerText = "Memeriksa PIN...";
+        btn.innerText = "Memeriksa & Menyimpan PIN...";
         errBox.style.display = "none";
 
         const cbName = "cbPin_" + Date.now();
@@ -574,7 +612,12 @@
 
             if (res && res.result === "success" && res.staffName) {
                 currentStaffName = res.staffName;
-                sessionStorage.setItem('resto_staff_name', currentStaffName);
+                currentStaffPin = pin;
+
+                // Simpan otomatis ke memori perangkat (auto-save)
+                localStorage.setItem('resto_saved_staff_name', currentStaffName);
+                localStorage.setItem('resto_saved_staff_pin', currentStaffPin);
+
                 document.getElementById('activeStaffLabel').innerText = currentStaffName;
                 document.getElementById('pinLockOverlay').style.display = "none";
 
@@ -751,6 +794,9 @@
             delete window[cbName];
             if (res && res.result === "success") {
                 alert(res.message);
+                if (currentStaffPin === pin) {
+                    clearSavedStaffSession();
+                }
                 refreshAdminStaffList();
             } else {
                 alert(res ? res.message : "Gagal menghapus staf.");
