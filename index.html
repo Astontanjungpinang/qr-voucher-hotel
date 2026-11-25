@@ -3,78 +3,150 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Sistem QR Voucher Breakfast Hotel</title>
+    <title>Breakfast Voucher - Aston Tanjungpinang</title>
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
     <style>
-        body { background-color: #f4f6f9; display: flex; align-items: center; justify-content: center; height: 100vh; }
-        .card-menu { width: 100%; max-width: 400px; border-radius: 15px; box-shadow: 0 4px 15px rgba(0,0,0,0.1); }
+        body {
+            background-color: #f4f6f9;
+            min-height: 100vh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 16px;
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+        }
+        .menu-card {
+            background: #ffffff;
+            border-radius: 16px;
+            padding: 28px 24px;
+            width: 100%;
+            max-width: 380px;
+            box-shadow: 0 10px 28px rgba(15, 23, 42, 0.08);
+        }
+        .menu-card .btn-role {
+            padding: 11px 14px;
+            font-weight: 600;
+            border-radius: 8px;
+        }
+        .it-link-wrap {
+            border-top: 1px solid #e2e8f0;
+            margin-top: 18px;
+            padding-top: 12px;
+            text-align: center;
+        }
     </style>
 </head>
 <body>
-    <div class="card card-menu p-4 text-center bg-white">
-        <h3 class="mb-2 fw-bold text-primary">Breakfast Voucher</h3>
-        <p class="text-muted mb-4">Pilih divisi Anda untuk login:</p>
-        <div class="d-grid gap-3">
-            <button class="btn btn-primary btn-lg shadow-sm" onclick="openLogin('FO')">Front Office</button>
-            <button class="btn btn-success btn-lg shadow-sm" onclick="openLogin('RESTO')">Staff Restoran</button>
-            <!-- Tombol Accounting & Finance -->
-            <button class="btn btn-dark btn-lg shadow-sm" onclick="openLogin('FINANCE')">Accounting & Finance</button>
-        </div>
+
+<div class="menu-card">
+    <h4 class="fw-bold text-primary text-center mb-1">Breakfast Voucher</h4>
+    <p class="text-muted small text-center mb-4">Pilih divisi Anda untuk login:</p>
+
+    <div class="d-grid gap-2">
+        <button type="button" onclick="openRoleModal('FO', 'Front Office', 'fo.html')" class="btn btn-primary btn-role">
+            Front Office
+        </button>
+        <button type="button" onclick="openRoleModal('RESTO', 'Staff Restoran', 'resto.html')" class="btn btn-success btn-role">
+            Staff Restoran
+        </button>
+        <button type="button" onclick="openRoleModal('FINANCE', 'Accounting & Finance', 'finance.html')" class="btn btn-dark btn-role">
+            Accounting &amp; Finance
+        </button>
     </div>
 
-    <!-- Modal Login Password -->
-    <div class="modal fade" id="loginModal" tabindex="-1">
-        <div class="modal-dialog modal-dialog-centered">
-            <div class="modal-content">
-                <div class="modal-header">
-                    <h5 class="modal-title fw-bold" id="modalTitle">Login Divisi</h5>
-                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+    <div class="it-link-wrap">
+        <a href="it-config.html" class="btn btn-outline-secondary btn-sm w-100 fw-semibold">
+            Konfigurasi IT (Admin)
+        </a>
+    </div>
+</div>
+
+<!-- Modal Login Divisi -->
+<div class="modal fade" id="roleLoginModal" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered modal-sm">
+        <div class="modal-content">
+            <form onsubmit="submitRoleLogin(event)">
+                <div class="modal-header py-2">
+                    <h6 class="modal-title fw-bold mb-0" id="roleModalTitle">Login Divisi</h6>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Tutup"></button>
                 </div>
                 <div class="modal-body">
-                    <form id="loginForm">
-                        <div class="mb-3">
-                            <label class="form-label">Masukkan Password Akses</label>
-                            <input type="password" id="inputPass" class="form-control" placeholder="Kata sandi..." required>
-                        </div>
-                        <button type="submit" class="btn btn-primary w-100">Masuk</button>
-                    </form>
+                    <label for="rolePassInput" class="form-label small fw-bold">Password</label>
+                    <input type="password" id="rolePassInput" class="form-control" placeholder="Masukkan password..." required>
+                    <div id="roleLoginErr" class="text-danger small fw-bold mt-2" style="display: none;"></div>
                 </div>
-            </div>
+                <div class="modal-footer py-2">
+                    <button type="button" class="btn btn-secondary btn-sm" data-bs-dismiss="modal">Batal</button>
+                    <button type="submit" id="btnSubmitRoleLogin" class="btn btn-primary btn-sm fw-bold">Masuk</button>
+                </div>
+            </form>
         </div>
     </div>
+</div>
 
 <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
 <script>
-    let selectedDept = "";
-    const loginModal = new bootstrap.Modal(document.getElementById('loginModal'));
+    const API_URL = "https://script.google.com/macros/s/AKfycbylJzosi9noWHvagRPKHcA6_bc-WwCsWGZVQe_iOBTuV8SRwjbl0CRvf3eVCg1OmxR--w/exec";
 
-    // PASSWORD AKSE KETIGA DIVISI
-    const PASSWORDS = {
-        'FO': 'fo2027',
-        'RESTO': 'resto123',
-        'FINANCE': 'finance321'
-    };
+    let selectedRole = "";
+    let selectedLabel = "";
+    let selectedTargetUrl = "";
+    let roleModalInstance = null;
 
-    function openLogin(dept) {
-        selectedDept = dept;
-        document.getElementById('modalTitle').innerText = `Login Divisi ${dept}`;
-        document.getElementById('inputPass').value = "";
-        loginModal.show();
+    function openRoleModal(roleCode, labelText, targetUrl) {
+        selectedRole = roleCode;
+        selectedLabel = labelText;
+        selectedTargetUrl = targetUrl;
+
+        document.getElementById('roleModalTitle').innerText = "Login " + labelText;
+        document.getElementById('rolePassInput').value = "";
+        document.getElementById('roleLoginErr').style.display = "none";
+
+        if (!roleModalInstance) {
+            roleModalInstance = new bootstrap.Modal(document.getElementById('roleLoginModal'));
+        }
+        roleModalInstance.show();
+        setTimeout(() => document.getElementById('rolePassInput').focus(), 150);
     }
 
-    document.getElementById('loginForm').addEventListener('submit', function(e) {
+    function submitRoleLogin(e) {
         e.preventDefault();
-        const pass = document.getElementById('inputPass').value;
+        const passVal = document.getElementById('rolePassInput').value.trim();
+        if (!passVal || !selectedRole) return;
 
-        if (pass === PASSWORDS[selectedDept]) {
-            sessionStorage.setItem('auth_' + selectedDept, 'true');
-            if (selectedDept === 'FO') window.location.href = 'fo.html';
-            if (selectedDept === 'RESTO') window.location.href = 'resto.html';
-            if (selectedDept === 'FINANCE') window.location.href = 'finance.html';
-        } else {
-            alert('Password Salah! Akses ditolak.');
-        }
-    });
+        const btn = document.getElementById('btnSubmitRoleLogin');
+        const errBox = document.getElementById('roleLoginErr');
+        btn.disabled = true;
+        btn.innerText = "Memeriksa...";
+        errBox.style.display = "none";
+
+        const cbName = "cbRoleLogin_" + Date.now();
+        window[cbName] = function(res) {
+            delete window[cbName];
+            btn.disabled = false;
+            btn.innerText = "Masuk";
+
+            if (res && res.result === "success") {
+                sessionStorage.setItem('auth_' + selectedRole, 'true');
+                window.location.href = selectedTargetUrl;
+            } else {
+                errBox.innerText = res ? res.message : "Password salah!";
+                errBox.style.display = "block";
+            }
+        };
+
+        const script = document.createElement('script');
+        script.src = `${API_URL}?action=verifyMenuLogin&menu=${encodeURIComponent(selectedRole)}&password=${encodeURIComponent(passVal)}&callback=${cbName}`;
+        script.onerror = function() {
+            delete window[cbName];
+            btn.disabled = false;
+            btn.innerText = "Masuk";
+            errBox.innerText = "Gagal terhubung ke server.";
+            errBox.style.display = "block";
+        };
+        document.body.appendChild(script);
+        script.onload = () => script.remove();
+    }
 </script>
 </body>
 </html>
