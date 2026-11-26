@@ -60,27 +60,6 @@
             color: #ffffff;
             box-shadow: 0 0 0 0.2rem rgba(13, 110, 253, 0.25);
         }
-        /* Modal Super Admin */
-        .admin-modal-overlay {
-            position: fixed;
-            inset: 0;
-            background: rgba(0, 0, 0, 0.85);
-            z-index: 1200;
-            display: none;
-            align-items: center;
-            justify-content: center;
-            padding: 16px;
-        }
-        .admin-card {
-            background-color: #1e2229;
-            border: 1px solid #3d444d;
-            border-radius: 16px;
-            padding: 20px;
-            width: 100%;
-            max-width: 460px;
-            max-height: 92vh;
-            overflow-y: auto;
-        }
         /* Navigasi Tab Besar Ramah Mobile */
         .nav-pills .nav-link {
             background-color: #1e2229;
@@ -225,110 +204,8 @@
             <button type="submit" id="btnVerifyPin" class="btn btn-primary w-100 fw-bold py-2 mb-2">
                 Mulai Tugas Scan
             </button>
-            <button type="button" onclick="openAdminStaffModal()" class="btn btn-outline-info btn-sm w-100 mb-2">
-                Mode Super Admin (Kelola Staf & Password)
-            </button>
             <a href="index.html" class="btn btn-outline-secondary btn-sm w-100">Kembali ke Menu Utama</a>
         </form>
-    </div>
-</div>
-
-<!-- ======================================================================= -->
-<!-- MODAL MODE SUPER ADMIN: KELOLA PIN STAF & PASSWORD VOID / SUPER ADMIN   -->
-<!-- ======================================================================= -->
-<div id="adminStaffOverlay" class="admin-modal-overlay no-print">
-    <div class="admin-card shadow-lg">
-        <div class="d-flex justify-content-between align-items-center border-bottom border-secondary pb-2 mb-3">
-            <h6 class="fw-bold text-info mb-0">Mode Super Admin — Sistem & Staf</h6>
-            <button type="button" onclick="closeAdminStaffModal()" class="btn btn-sm btn-outline-light py-0 px-2">×</button>
-        </div>
-
-        <!-- Langkah 1: Verifikasi Password Super Admin -->
-        <div id="adminAuthSection">
-            <p class="text-secondary small mb-2">Masukkan <strong>Password Super Admin</strong> untuk mengelola PIN staf dan pengaturan password:</p>
-            <div class="mb-2">
-                <input type="password" id="adminPassInput" class="form-control form-control-sm bg-dark text-white border-secondary" placeholder="Password Super Admin...">
-            </div>
-            <div id="adminAuthErr" class="text-danger small fw-bold mb-2" style="display: none;"></div>
-            <button type="button" id="btnAdminLogin" onclick="unlockAdminStaffPanel()" class="btn btn-info btn-sm w-100 fw-bold text-dark">
-                Buka Panel Super Admin
-            </button>
-        </div>
-
-        <!-- Langkah 2: Sub-Tab Kelola Staf & Pengaturan Password -->
-        <div id="adminManageSection" style="display: none;">
-            <ul class="nav nav-tabs nav-fill mb-3 border-secondary" role="tablist">
-                <li class="nav-item" role="presentation">
-                    <button class="nav-link active small fw-bold py-1" data-bs-toggle="tab" data-bs-target="#subTabStaff" type="button">
-                        PIN Staf Resto
-                    </button>
-                </li>
-                <li class="nav-item" role="presentation">
-                    <button class="nav-link small fw-bold py-1" data-bs-toggle="tab" data-bs-target="#subTabSecurity" type="button">
-                        Ubah Password
-                    </button>
-                </li>
-            </ul>
-
-            <div class="tab-content">
-                <!-- SUB-TAB A: TAMBAH & HAPUS PIN STAF -->
-                <div class="tab-pane fade show active" id="subTabStaff">
-                    <form onsubmit="handleAddStaff(event)" class="bg-dark p-3 rounded border border-secondary mb-3">
-                        <div class="small fw-bold text-warning mb-2">+ Tambah Staf Baru</div>
-                        <div class="row g-2 mb-2">
-                            <div class="col-5">
-                                <input type="text" inputmode="numeric" maxlength="6" id="newStaffPin" class="form-control form-control-sm" placeholder="PIN (4-6 digit)" required>
-                            </div>
-                            <div class="col-7">
-                                <input type="text" id="newStaffName" class="form-control form-control-sm" placeholder="Nama Staf (Mis: Maya)" required>
-                            </div>
-                        </div>
-                        <button type="submit" id="btnAddStaff" class="btn btn-success btn-sm w-100 fw-bold">
-                            Simpan Staf Baru
-                        </button>
-                    </form>
-
-                    <div class="small fw-bold text-secondary mb-2">Daftar Staf Aktif:</div>
-                    <div class="table-responsive border border-secondary rounded bg-dark" style="max-height: 220px;">
-                        <table class="table table-dark table-sm table-hover mb-0 align-middle">
-                            <thead>
-                                <tr class="small text-secondary">
-                                    <th>PIN</th>
-                                    <th>Nama Staf</th>
-                                    <th class="text-end">Aksi</th>
-                                </tr>
-                            </thead>
-                            <tbody id="adminStaffTableBody">
-                                <tr><td colspan="3" class="text-center text-muted py-3">Memuat daftar staf...</td></tr>
-                            </tbody>
-                        </table>
-                    </div>
-                </div>
-
-                <!-- SUB-TAB B: UBAH PASSWORD VOID SUPERVISOR FO & SUPER ADMIN -->
-                <div class="tab-pane fade" id="subTabSecurity">
-                    <!-- Ubah Password Void Supervisor FO -->
-                    <form onsubmit="handleChangePassword(event, 'VOID_PASS')" class="bg-dark p-3 rounded border border-secondary mb-3">
-                        <div class="small fw-bold text-warning mb-1">Password Void Supervisor FO</div>
-                        <div class="text-secondary mb-2" style="font-size: 0.75rem;">Dipegang oleh tim Supervisor FO untuk pembatalan (VOID) voucher.</div>
-                        <div class="input-group input-group-sm">
-                            <input type="text" id="inputNewVoidPass" class="form-control" placeholder="Password Void baru (min 4 karakter)" required>
-                            <button type="submit" id="btnSaveVoidPass" class="btn btn-warning fw-bold">Simpan</button>
-                        </div>
-                    </form>
-
-                    <!-- Ubah Password Super Admin -->
-                    <form onsubmit="handleChangePassword(event, 'SUPERADMIN_PASS')" class="bg-dark p-3 rounded border border-secondary">
-                        <div class="small fw-bold text-info mb-1">Password Super Admin</div>
-                        <div class="text-secondary mb-2" style="font-size: 0.75rem;">Digunakan untuk mengakses Mode Super Admin ini.</div>
-                        <div class="input-group input-group-sm">
-                            <input type="text" id="inputNewSuperPass" class="form-control" placeholder="Password Super Admin baru" required>
-                            <button type="submit" id="btnSaveSuperPass" class="btn btn-info fw-bold text-dark">Simpan</button>
-                        </div>
-                    </form>
-                </div>
-            </div>
-        </div>
     </div>
 </div>
 
@@ -340,7 +217,7 @@
         <div style="width: 78px;"></div>
     </div>
 
-    <!-- Bilah Nama Staf Aktif & Akses Super Admin -->
+    <!-- Bilah Nama Staf Aktif -->
     <div class="staff-bar d-flex flex-wrap align-items-center justify-content-between gap-2 no-print">
         <div>
             <span class="text-secondary">Petugas Scan:</span>
@@ -348,9 +225,6 @@
             <span class="badge bg-success ms-1" style="font-size: 0.65rem;">Tersimpan</span>
         </div>
         <div class="d-flex gap-2">
-            <button type="button" onclick="openAdminStaffModal()" class="btn btn-outline-info btn-sm py-0 px-2" style="font-size: 0.78rem;">
-                Super Admin
-            </button>
             <button type="button" onclick="switchStaffPrompt()" class="btn btn-outline-warning btn-sm py-0 px-2" style="font-size: 0.78rem;">
                 Ganti Staf
             </button>
@@ -508,7 +382,7 @@
 
 <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
 <script>
-    const API_URL = "https://script.google.com/macros/s/AKfycbwvoZJAS9dppGukXVXpeILPHLbHxDwteehcQnoPxmxb2WHHSOvulPqv2g02lvYDaz0z0A/exec";
+    const API_URL = "https://script.google.com/macros/s/AKfycbzV13xJR1Fob290f56s_TaFpi8nGETuh-a8oIPQS2wEa_Lo3Fer3R30tU_luvryqGsxLw/exec";
 
     let html5QrCode = null;
     let isScanningLocked = false;
@@ -517,7 +391,6 @@
     // Ambil sesi tersimpan permanen di perangkat (localStorage)
     let currentStaffName = localStorage.getItem('resto_saved_staff_name') || "";
     let currentStaffPin = localStorage.getItem('resto_saved_staff_pin') || "";
-    let verifiedAdminPass = "";
 
     function getTodayLocalStr() {
         const now = new Date();
@@ -551,7 +424,6 @@
                 localStorage.setItem('resto_saved_staff_name', currentStaffName);
                 document.getElementById('activeStaffLabel').innerText = currentStaffName;
             } else if (res && res.result === "error") {
-                // Jika PIN dihapus/dinonaktifkan oleh Super Admin, hapus simpanan & kunci layar
                 clearSavedStaffSession();
                 showPinLock("PIN tersimpan Anda sudah dinonaktifkan oleh Admin. Silakan masukkan PIN baru.");
             }
@@ -614,7 +486,6 @@
                 currentStaffName = res.staffName;
                 currentStaffPin = pin;
 
-                // Simpan otomatis ke memori perangkat (auto-save)
                 localStorage.setItem('resto_saved_staff_name', currentStaffName);
                 localStorage.setItem('resto_saved_staff_pin', currentStaffPin);
 
@@ -646,217 +517,6 @@
             btn.innerText = "Mulai Tugas Scan";
             errBox.innerText = "Gagal terhubung ke server!";
             errBox.style.display = "block";
-        };
-        document.body.appendChild(script);
-        script.onload = () => script.remove();
-    }
-
-    // =========================================================================
-    // LOGIKA MODE SUPER ADMIN: KELOLA STAF & UBAH PASSWORD VOID / SUPER ADMIN
-    // =========================================================================
-    function openAdminStaffModal() {
-        verifiedAdminPass = "";
-        document.getElementById('adminPassInput').value = "";
-        document.getElementById('adminAuthErr').style.display = "none";
-        document.getElementById('adminAuthSection').style.display = "block";
-        document.getElementById('adminManageSection').style.display = "none";
-        document.getElementById('adminStaffOverlay').style.display = "flex";
-        setTimeout(() => document.getElementById('adminPassInput').focus(), 100);
-    }
-
-    function closeAdminStaffModal() {
-        document.getElementById('adminStaffOverlay').style.display = "none";
-        verifiedAdminPass = "";
-    }
-
-    function unlockAdminStaffPanel() {
-        const pass = document.getElementById('adminPassInput').value.trim();
-        if (!pass) return;
-
-        const btn = document.getElementById('btnAdminLogin');
-        const errBox = document.getElementById('adminAuthErr');
-        btn.disabled = true;
-        btn.innerText = "Memverifikasi...";
-        errBox.style.display = "none";
-
-        const cbName = "cbAdminList_" + Date.now();
-        window[cbName] = function(res) {
-            delete window[cbName];
-            btn.disabled = false;
-            btn.innerText = "Buka Panel Super Admin";
-
-            if (res && res.result === "success") {
-                verifiedAdminPass = pass;
-                document.getElementById('adminAuthSection').style.display = "none";
-                document.getElementById('adminManageSection').style.display = "block";
-                renderAdminStaffTable(res.staffList || []);
-            } else {
-                errBox.innerText = res ? res.message : "Password Super Admin salah!";
-                errBox.style.display = "block";
-            }
-        };
-
-        const script = document.createElement('script');
-        script.src = `${API_URL}?action=listStaff&password=${encodeURIComponent(pass)}&callback=${cbName}`;
-        script.onerror = function() {
-            delete window[cbName];
-            btn.disabled = false;
-            btn.innerText = "Buka Panel Super Admin";
-            errBox.innerText = "Gagal terhubung ke server!";
-            errBox.style.display = "block";
-        };
-        document.body.appendChild(script);
-        script.onload = () => script.remove();
-    }
-
-    function refreshAdminStaffList() {
-        if (!verifiedAdminPass) return;
-        const cbName = "cbAdminRefresh_" + Date.now();
-        window[cbName] = function(res) {
-            delete window[cbName];
-            if (res && res.result === "success") {
-                renderAdminStaffTable(res.staffList || []);
-            }
-        };
-        const script = document.createElement('script');
-        script.src = `${API_URL}?action=listStaff&password=${encodeURIComponent(verifiedAdminPass)}&callback=${cbName}`;
-        document.body.appendChild(script);
-        script.onload = () => script.remove();
-    }
-
-    function renderAdminStaffTable(list) {
-        const tbody = document.getElementById('adminStaffTableBody');
-        if (!list || list.length === 0) {
-            tbody.innerHTML = `<tr><td colspan="3" class="text-center text-muted py-3">Belum ada staf terdaftar.</td></tr>`;
-            return;
-        }
-
-        let html = "";
-        list.forEach(item => {
-            html += `
-                <tr>
-                    <td class="fw-bold font-monospace text-info">${item.pin}</td>
-                    <td class="fw-semibold">${item.nama}</td>
-                    <td class="text-end">
-                        <button type="button" onclick="handleDeleteStaff('${item.pin}', '${item.nama.replace(/'/g, "\\'")}')" class="btn btn-outline-danger btn-sm py-0 px-2" style="font-size: 0.75rem;">
-                            Hapus
-                        </button>
-                    </td>
-                </tr>
-            `;
-        });
-        tbody.innerHTML = html;
-    }
-
-    function handleAddStaff(e) {
-        e.preventDefault();
-        const pin = document.getElementById('newStaffPin').value.trim();
-        const nama = document.getElementById('newStaffName').value.trim();
-        if (!pin || !nama || !verifiedAdminPass) return;
-
-        const btn = document.getElementById('btnAddStaff');
-        btn.disabled = true;
-        btn.innerText = "Menyimpan...";
-
-        const cbName = "cbAddStaff_" + Date.now();
-        window[cbName] = function(res) {
-            delete window[cbName];
-            btn.disabled = false;
-            btn.innerText = "Simpan Staf Baru";
-
-            if (res && res.result === "success") {
-                alert(res.message);
-                document.getElementById('newStaffPin').value = "";
-                document.getElementById('newStaffName').value = "";
-                refreshAdminStaffList();
-            } else {
-                alert(res ? res.message : "Gagal menambahkan staf.");
-            }
-        };
-
-        const script = document.createElement('script');
-        script.src = `${API_URL}?action=addStaff&password=${encodeURIComponent(verifiedAdminPass)}&pin=${encodeURIComponent(pin)}&nama=${encodeURIComponent(nama)}&callback=${cbName}`;
-        script.onerror = function() {
-            delete window[cbName];
-            btn.disabled = false;
-            btn.innerText = "Simpan Staf Baru";
-            alert("Gagal terhubung ke server!");
-        };
-        document.body.appendChild(script);
-        script.onload = () => script.remove();
-    }
-
-    function handleDeleteStaff(pin, nama) {
-        if (!confirm(`Hapus akses PIN untuk staf "${nama}" (PIN: ${pin})?`)) return;
-
-        const cbName = "cbDelStaff_" + Date.now();
-        window[cbName] = function(res) {
-            delete window[cbName];
-            if (res && res.result === "success") {
-                alert(res.message);
-                if (currentStaffPin === pin) {
-                    clearSavedStaffSession();
-                }
-                refreshAdminStaffList();
-            } else {
-                alert(res ? res.message : "Gagal menghapus staf.");
-            }
-        };
-
-        const script = document.createElement('script');
-        script.src = `${API_URL}?action=deleteStaff&password=${encodeURIComponent(verifiedAdminPass)}&pin=${encodeURIComponent(pin)}&callback=${cbName}`;
-        script.onerror = function() {
-            delete window[cbName];
-            alert("Gagal terhubung ke server!");
-        };
-        document.body.appendChild(script);
-        script.onload = () => script.remove();
-    }
-
-    function handleChangePassword(e, targetKey) {
-        e.preventDefault();
-        if (!verifiedAdminPass) return;
-
-        const isVoidTarget = (targetKey === "VOID_PASS");
-        const inputEl = document.getElementById(isVoidTarget ? 'inputNewVoidPass' : 'inputNewSuperPass');
-        const btnEl = document.getElementById(isVoidTarget ? 'btnSaveVoidPass' : 'btnSaveSuperPass');
-        const newPassVal = inputEl.value.trim();
-
-        if (!newPassVal || newPassVal.length < 4) {
-            alert("Password baru minimal 4 karakter!");
-            return;
-        }
-
-        const labelText = isVoidTarget ? "Password Void Supervisor FO" : "Password Super Admin";
-        if (!confirm(`Simpan perubahan untuk ${labelText} menjadi "${newPassVal}"?`)) return;
-
-        btnEl.disabled = true;
-        btnEl.innerText = "...";
-
-        const cbName = "cbUpdPass_" + Date.now();
-        window[cbName] = function(res) {
-            delete window[cbName];
-            btnEl.disabled = false;
-            btnEl.innerText = "Simpan";
-
-            if (res && res.result === "success") {
-                alert(res.message);
-                inputEl.value = "";
-                if (!isVoidTarget && res.newAdminPass) {
-                    verifiedAdminPass = res.newAdminPass;
-                }
-            } else {
-                alert(res ? res.message : "Gagal memperbarui password.");
-            }
-        };
-
-        const script = document.createElement('script');
-        script.src = `${API_URL}?action=updatePassword&password=${encodeURIComponent(verifiedAdminPass)}&target=${encodeURIComponent(targetKey)}&newPassword=${encodeURIComponent(newPassVal)}&callback=${cbName}`;
-        script.onerror = function() {
-            delete window[cbName];
-            btnEl.disabled = false;
-            btnEl.innerText = "Simpan";
-            alert("Gagal terhubung ke server!");
         };
         document.body.appendChild(script);
         script.onload = () => script.remove();
