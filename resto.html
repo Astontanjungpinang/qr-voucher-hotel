@@ -81,6 +81,7 @@
             overflow: hidden;
             background: #000;
             border: 2px solid #2d323b;
+            min-height: 260px;
         }
         /* Latar Belakang Gelap Transparan di Tengah Layar */
         .scan-overlay-backdrop {
@@ -288,7 +289,7 @@
                         <input type="date" id="reconDateInput" class="form-control form-control-sm">
                     </div>
                     <div class="col-4">
-                        <button type="button" id="btnLoadRecon" onclick="loadDailyReconcile()" class="btn btn-primary btn-sm w-100 fw-bold">
+                        <button type="button" id="btnLoadRecon" onclick="loadDailyReconcile(true)" class="btn btn-primary btn-sm w-100 fw-bold">
                             Tampilkan
                         </button>
                     </div>
@@ -387,6 +388,8 @@
     let html5QrCode = null;
     let isScanningLocked = false;
     let dailyRowsCache = [];
+    const reconcileCacheByDate = {};
+    let isReconLoading = false;
 
     // Ambil sesi tersimpan permanen di perangkat (localStorage)
     let currentStaffName = localStorage.getItem('resto_saved_staff_name') || "";
@@ -407,7 +410,8 @@
             showPinLock();
         } else {
             document.getElementById('activeStaffLabel').innerText = currentStaffName;
-            startCameraScanner();
+            // Jalankan kamera segera tanpa menunggu validasi PIN latar belakang
+            setTimeout(() => startCameraScanner(), 0);
             revalidateSavedPinSilently(currentStaffPin);
         }
     };
@@ -599,6 +603,9 @@
                     katText = "COMPLIMENT";
                 }
 
+                // Invalidasi cache tanggal hari ini agar reconcile berikutnya memuat status terbaru
+                delete reconcileCacheByDate[todayStr];
+
                 box.className = "scan-result-box result-valid";
                 title.innerText = "VALID — SILAKAN MASUK";
                 msg.innerHTML = `Kamar <strong>${d.noKamar || '-'}</strong> (${d.pax || 1} Pax)`;
@@ -651,18 +658,28 @@
                 html5QrCode.pause(true);
             } catch (e) {}
         }
-        loadDailyReconcile();
+        loadDailyReconcile(false);
     }
 
     // =========================================================================
-    // LOGIKA RECONCILE HARIAN (100% SAMA DENGAN REPORT ACCOUNTING)
+    // LOGIKA RECONCILE HARIAN (100% SAMA DENGAN REPORT ACCOUNTING + CACHE)
     // =========================================================================
-    function loadDailyReconcile() {
+    function loadDailyReconcile(forceRefresh = true) {
         const targetDate = document.getElementById('reconDateInput').value;
         if (!targetDate) {
             alert("Pilih tanggal sarapan terlebih dahulu!");
             return;
         }
+
+        // Gunakan cache jika sudah pernah dimuat untuk tanggal ini dan bukan paksa refresh
+        if (!forceRefresh && Array.isArray(reconcileCacheByDate[targetDate])) {
+            dailyRowsCache = reconcileCacheByDate[targetDate];
+            calculateAndRenderReconcile(dailyRowsCache);
+            return;
+        }
+
+        if (isReconLoading) return;
+        isReconLoading = true;
 
         const btn = document.getElementById('btnLoadRecon');
         btn.disabled = true;
@@ -674,12 +691,15 @@
         const cbName = "cbRestoRecon_" + Date.now();
         window[cbName] = function(res) {
             delete window[cbName];
+            isReconLoading = false;
             btn.disabled = false;
             btn.innerText = "Tampilkan";
 
             if (res && res.result === "success") {
                 const rawRows = res.data || [];
-                dailyRowsCache = rawRows.filter(r => r.tglCheckin < targetDate && targetDate <= r.tglCheckout);
+                const filteredRows = rawRows.filter(r => r.tglCheckin < targetDate && targetDate <= r.tglCheckout);
+                reconcileCacheByDate[targetDate] = filteredRows;
+                dailyRowsCache = filteredRows;
                 calculateAndRenderReconcile(dailyRowsCache);
             } else {
                 tbody.innerHTML = `<tr><td colspan="7" class="text-center text-danger py-4">${res ? res.message : "Gagal memuat data."}</td></tr>`;
@@ -690,6 +710,7 @@
         script.src = `${API_URL}?action=report&startDate=${encodeURIComponent(targetDate)}&endDate=${encodeURIComponent(targetDate)}&callback=${cbName}`;
         script.onerror = function() {
             delete window[cbName];
+            isReconLoading = false;
             btn.disabled = false;
             btn.innerText = "Tampilkan";
             tbody.innerHTML = `<tr><td colspan="7" class="text-center text-danger py-4">Gagal terhubung ke server!</td></tr>`;
